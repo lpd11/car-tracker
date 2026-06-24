@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Car Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181b24;
+    --surface2: #1e2130;
+    --border: #2a2f42;
+    --text: #e8eaf0;
+    --muted: #6b7194;
+    --car1: #f97316;
+    --car1-dim: rgba(249,115,22,0.12);
+    --car2: #eab308;
+    --car2-dim: rgba(234,179,8,0.12);
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --radius: 12px;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans Thai', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ─── SETUP SCREEN ─── */
+  #setup-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 560px;
+    width: 100%;
+  }
+
+  .setup-card h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .setup-card p { color: var(--muted); line-height: 1.6; margin-bottom: 24px; }
+
+  .setup-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--blue);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .setup-step p { color: var(--text); margin: 0; font-size: 13px; line-height: 1.6; }
+  .setup-step code {
+    font-family: var(--mono);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 12px;
+    color: var(--green);
+    word-break: break-all;
+  }
+
+  .setup-input-group { margin-top: 20px; }
+  .setup-input-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+
+  input[type="text"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--muted); }
+  .btn-full { width: 100%; justify-content: center; margin-top: 12px; }
+
+  /* ─── MAIN APP ─── */
+  #app { display: none; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .logo span { color: var(--blue); }
+
+  nav { display: flex; gap: 2px; margin-left: auto; }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .nav-btn:hover { color: var(--text); background: var(--surface2); }
+  .nav-btn.active { color: var(--text); background: var(--surface2); }
+
+  .sync-indicator {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .sync-indicator.syncing { background: var(--car2); animation: pulse 1s infinite; }
+  .sync-indicator.error { background: var(--red); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  main { max-width: 900px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ─── PAGE ─── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── CAR CARDS ─── */
+  .car-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+
+  @media (max-width: 600px) { .car-cards { grid-template-columns: 1fr; } }
+
+  .car-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .car-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .car-card[data-car="1"]::before { background: var(--car1); }
+  .car-card[data-car="2"]::before { background: var(--car2); }
+
+  .car-card:hover { border-color: var(--muted); }
+  .car-card.selected[data-car="1"] { border-color: var(--car1); background: var(--car1-dim); }
+  .car-card.selected[data-car="2"] { border-color: var(--car2); background: var(--car2-dim); }
+
+  .car-plate {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .car-card[data-car="1"] .car-plate { color: var(--car1); }
+  .car-card[data-car="2"] .car-plate { color: var(--car2); }
+
+  .car-name { color: var(--muted); font-size: 12px; margin-bottom: 16px; }
+
+  .car-stats { display: flex; gap: 20px; }
+
+  .stat-item { }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* ─── QUICK ACTION ─── */
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-family: var(--mono);
+  }
+
+  .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+
+  @media (max-width: 480px) { .quick-actions { grid-template-columns: 1fr; } }
+
+  .action-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .action-card:hover { border-color: var(--blue); }
+
+  .action-icon { font-size: 24px; margin-bottom: 10px; display: block; }
+  .action-title { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+  .action-desc { font-size: 12px; color: var(--muted); }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  @media (min-width: 600px) {
+    .modal-overlay { align-items: center; padding: 20px; }
+  }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    padding: 24px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(30px);
+    transition: transform 0.25s;
+  }
+
+  @media (min-width: 600px) {
+    .modal { border-radius: 16px; transform: translateY(0) scale(0.97); }
+    .modal-overlay.open .modal { transform: scale(1); }
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .modal-title { font-size: 17px; font-weight: 600; }
+
+  .close-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .close-btn:hover { color: var(--text); }
+
+  .form-group { margin-bottom: 14px; }
+  .form-label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .car-select-btns { display: flex; gap: 8px; }
+
+  .car-select-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .car-select-btn.active[data-car="1"] { border-color: var(--car1); color: var(--car1); background: var(--car1-dim); }
+  .car-select-btn.active[data-car="2"] { border-color: var(--car2); color: var(--car2); background: var(--car2-dim); }
+
+  .fuel-type-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .fuel-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+
+  .fuel-btn.active { border-color: var(--green); color: var(--green); background: rgba(34,197,94,0.1); }
+
+  .calc-preview {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .calc-label { font-size: 12px; color: var(--muted); }
+  .calc-val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  /* ─── HISTORY TABLE ─── */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-bar input { flex: 1; min-width: 160px; }
+  .filter-bar select { width: auto; flex-shrink: 0; }
+
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .history-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .history-icon.fuel { background: rgba(34,197,94,0.12); }
+  .history-icon.repair { background: rgba(59,130,246,0.12); }
+
+  .history-info {}
+  .history-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .history-meta { font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .history-meta span { display: flex; align-items: center; gap: 3px; }
+
+  .history-amount {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .history-amount .amount {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .history-amount .amount.fuel-color { color: var(--green); }
+  .history-amount .amount.repair-color { color: var(--blue); }
+  .history-amount .car-badge {
+    font-size: 10px;
+    font-family: var(--mono);
+    margin-top: 2px;
+    text-align: right;
+  }
+
+  .car-badge-1 { color: var(--car1); }
+  .car-badge-2 { color: var(--car2); }
+
+  /* ─── STATS ─── */
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+
+  @media (min-width: 640px) { .stats-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .stat-card-val {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .stat-card-label { font-size: 11px; color: var(--muted); }
+
+  .summary-table { width: 100%; border-collapse: collapse; }
+  .summary-table th {
+    text-align: left;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+  }
+
+  .summary-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table .amount-col { font-family: var(--mono); font-size: 13px; text-align: right; }
+
+  .chart-bar-wrap { margin-top: 8px; }
+  .chart-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .chart-bar-label { font-size: 12px; color: var(--muted); width: 70px; flex-shrink: 0; text-align: right; }
+  .chart-bar-track { flex: 1; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s; }
+  .chart-bar-val { font-family: var(--mono); font-size: 12px; color: var(--muted); width: 70px; flex-shrink: 0; }
+
+  /* ─── EMPTY STATE ─── */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-text { font-size: 14px; }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 13px;
+    z-index: 999;
+    transition: transform 0.3s;
+    white-space: nowrap;
+  }
+
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+
+  /* ─── LOADING ─── */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    flex-direction: column;
+    gap: 16px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* RECENT SECTION */
+  .recent-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .see-all-btn { font-size: 12px; color: var(--blue); background: none; border: none; cursor: pointer; }
+
+  /* PERIOD SELECTOR */
+  .stats-car-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .stats-car-btn:hover { border-color: var(--muted); color: var(--text); }
+  .stats-car-btn.active[data-car="all"] { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,0.1); }
+  .stats-car-btn.active[data-car="1"] { border-color: var(--car1); color: var(--car1); background: var(--car1-dim); }
+  .stats-car-btn.active[data-car="2"] { border-color: var(--car2); color: var(--car2); background: var(--car2-dim); }
+
+  .period-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+  .period-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+  }
+
+  .period-tab.active { background: var(--surface2); color: var(--text); border-color: var(--muted); }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .section-card-title { font-size: 13px; font-weight: 500; margin-bottom: 16px; color: var(--muted); }
+
+  .fuel-economy-display {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .fuel-economy-big { font-family: var(--mono); font-size: 36px; font-weight: 600; }
+  .fuel-economy-unit { color: var(--muted); font-size: 13px; }
+  .fuel-economy-sub { font-size: 12px; color: var(--muted); }
+
+  /* ─── SERVICE PICKER ─── */
+  .service-search-wrap { display:flex; gap:8px; margin-bottom:8px; }
+  .service-search-wrap input { flex:1; }
+  .service-add-btn {
+    width:40px; height:40px; flex-shrink:0;
+    background:var(--blue); color:#fff;
+    border:none; border-radius:8px; font-size:20px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:opacity 0.2s;
+  }
+  .service-add-btn:hover { opacity:0.85; }
+
+  .service-list {
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    max-height:180px;
+    overflow-y:auto;
+    display:none;
+  }
+  .service-list.open { display:block; }
+
+  .service-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px;
+    cursor:pointer;
+    border-bottom:1px solid var(--border);
+    font-size:13px;
+    transition:background 0.1s;
+    gap:8px;
+  }
+  .service-item:last-child { border-bottom:none; }
+  .service-item:hover { background:var(--surface2); }
+  .service-item.checked { color:var(--green); }
+  .service-item-check { font-size:14px; flex-shrink:0; }
+  .service-item-del {
+    font-size:11px; color:var(--muted); background:none; border:none;
+    cursor:pointer; padding:2px 6px; border-radius:4px; flex-shrink:0;
+    transition:color 0.15s;
+  }
+  .service-item-del:hover { color:var(--red); }
+
+  .selected-services {
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; min-height:0;
+  }
+  .service-tag {
+    display:inline-flex; align-items:center; gap:4px;
+    background:rgba(59,130,246,0.15); border:1px solid var(--blue);
+    color:var(--blue); border-radius:6px;
+    padding:4px 10px; font-size:12px;
+  }
+  .service-tag-remove {
+    background:none; border:none; color:var(--blue);
+    cursor:pointer; font-size:14px; line-height:1; padding:0;
+    opacity:0.7;
+  }
+  .service-tag-remove:hover { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div>กำลังโหลด...</div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" style="display:none">
+  <div class="setup-card">
+    <h1>🚗 Car Tracker Setup</h1>
+    <p>ตั้งค่าครั้งแรกสักครู่ แล้วพร้อมใช้งานได้ทันที</p>
+
+    <div class="setup-step">
+      <div class="step-num">STEP 01 — GOOGLE APPS SCRIPT</div>
+      <p>เปิด <strong>Google Sheets</strong> ใหม่ → เมนู <strong>Extensions → Apps Script</strong> → วางโค้ดด้านล่างนี้แล้ว Deploy เป็น Web App (Execute as: Me, Access: Anyone)</p>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">SCRIPT CODE — คัดลอกทั้งหมด</div>
+      <textarea id="script-code" rows="8" readonly style="font-family:monospace;font-size:11px;background:var(--bg);resize:vertical"></textarea>
+      <button class="btn btn-ghost" style="margin-top:8px;font-size:12px" onclick="copyScript()">📋 คัดลอก Script</button>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">STEP 02 — วาง URL</div>
+      <p>หลัง Deploy แล้ว คัดลอก <strong>Web App URL</strong> มาวางด้านล่าง</p>
+    </div>
+
+    <div class="setup-input-group">
+      <label>Web App URL</label>
+      <input type="text" id="setup-url" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="saveSetup()">✓ เชื่อมต่อและเริ่มใช้งาน</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header>
+    <div class="logo">CAR<span>.</span>TRACK</div>
+    <nav>
+      <button class="nav-btn active" onclick="showPage('dashboard',this)">หน้าหลัก</button>
+      <button class="nav-btn" onclick="showPage('history',this)">ประวัติ</button>
+      <button class="nav-btn" onclick="showPage('stats',this)">สรุป</button>
+    </nav>
+    <div class="sync-indicator" id="sync-dot" title="พร้อมใช้งาน"></div>
+  </header>
+
+  <main>
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="car-cards">
+        <div class="car-card" data-car="1">
+          <div class="car-plate">9กข 70</div>
+          <div class="car-name">Nissan Almera · สีส้ม</div>
+          <div class="car-stats">
+            <div class="stat-item">
+              <div class="stat-val" id="odo-1">—</div>
+              <div class="stat-label">KM ล่าสุด</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-val" id="spend-1">—</div>
+              <div class="stat-label">ใช้จ่ายปีนี้</div>
+            </div>
+          </div>
+        </div>
+        <div class="car-card" data-car="2">
+          <div class="car-plate">3กส 7666</div>
+          <div class="car-name">Honda Jazz · สีเหลือง</div>
+          <div class="car-stats">
+            <div class="stat-item">
+              <div class="stat-val" id="odo-2">—</div>
+              <div class="stat-label">KM ล่าสุด</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-val" id="spend-2">—</div>
+              <div class="stat-label">ใช้จ่ายปีนี้</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">บันทึกรายการ</div>
+      <div class="quick-actions">
+        <div class="action-card" onclick="openModal('fuel')">
+          <span class="action-icon">⛽</span>
+          <div class="action-title">เติมน้ำมัน</div>
+          <div class="action-desc">บันทึกการเติมน้ำมันและคำนวณอัตราสิ้นเปลือง</div>
+        </div>
+        <div class="action-card" onclick="openRepairModal()">
+          <span class="action-icon">🔧</span>
+          <div class="action-title">ค่าซ่อม / บำรุง</div>
+          <div class="action-desc">ประวัติการซ่อม เปลี่ยนอะไหล่ และบำรุงรักษา</div>
+        </div>
+      </div>
+
+      <div class="recent-header">
+        <div class="section-label" style="margin-bottom:0">รายการล่าสุด</div>
+        <button class="see-all-btn" onclick="showPage('history',document.querySelectorAll('.nav-btn')[1])">ดูทั้งหมด →</button>
+      </div>
+      <div class="history-list" id="recent-list">
+        <div class="empty"><div class="empty-icon">📋</div><div class="empty-text">ยังไม่มีรายการ</div></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="page-history">
+      <div class="filter-bar">
+        <input type="text" id="search-input" placeholder="ค้นหา เช่น แบตเตอรี่, อู่..." oninput="renderHistory()">
+        <select id="filter-car" onchange="renderHistory()">
+          <option value="">รถทุกคัน</option>
+          <option value="1">9กข 70 (Almera)</option>
+          <option value="2">3กส 7666 (Jazz)</option>
+        </select>
+        <select id="filter-type" onchange="renderHistory()">
+          <option value="">ทุกประเภท</option>
+          <option value="fuel">เติมน้ำมัน</option>
+          <option value="repair">ซ่อม/บำรุง</option>
+        </select>
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="empty"><div class="empty-icon">📋</div><div class="empty-text">ยังไม่มีรายการ</div></div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="page" id="page-stats">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="stats-car-btn active" data-car="all" onclick="setCarFilter('all',this)">🚗 รถทุกคัน</button>
+        <button class="stats-car-btn" data-car="1" onclick="setCarFilter('1',this)">9กข 70 · Almera</button>
+        <button class="stats-car-btn" data-car="2" onclick="setCarFilter('2',this)">3กส 7666 · Jazz</button>
+      </div>
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setPeriod('month',this)">เดือนนี้</button>
+        <button class="period-tab" onclick="setPeriod('year',this)">ปีนี้</button>
+        <button class="period-tab" onclick="setPeriod('all',this)">ทั้งหมด</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-val" id="s-total">฿0</div>
+          <div class="stat-card-label">ค่าใช้จ่ายรวม</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="s-fuel">฿0</div>
+          <div class="stat-card-label">ค่าน้ำมัน</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="s-repair">฿0</div>
+          <div class="stat-card-label">ค่าซ่อม/บำรุง</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="s-count">0</div>
+          <div class="stat-card-label">จำนวนรายการ</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">ค่าใช้จ่ายแยกตามรถ</div>
+        <div class="chart-bar-wrap" id="car-chart"></div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">อัตราสิ้นเปลืองน้ำมัน (เฉลี่ย)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="economy-display">
+          <div>
+            <div style="font-size:11px;color:var(--car1);font-family:var(--mono);margin-bottom:8px">9กข 70 · ALMERA</div>
+            <div class="fuel-economy-display">
+              <div class="fuel-economy-big" id="eco-1">—</div>
+              <div class="fuel-economy-unit">กม./ล.</div>
+            </div>
+            <div class="fuel-economy-sub" id="eco-1-sub"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--car2);font-family:var(--mono);margin-bottom:8px">3กส 7666 · JAZZ</div>
+            <div class="fuel-economy-display">
+              <div class="fuel-economy-big" id="eco-2">—</div>
+              <div class="fuel-economy-unit">กม./ล.</div>
+            </div>
+            <div class="fuel-economy-sub" id="eco-2-sub"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title">รายการค่าใช้จ่ายสูงสุด</div>
+        <table class="summary-table" id="top-table">
+          <thead><tr><th>รายการ</th><th>รถ</th><th style="text-align:right">ราคา</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: FUEL -->
+<div class="modal-overlay" id="modal-fuel" onclick="closeModalOutside(event,'modal-fuel')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⛽ เติมน้ำมัน</div>
+      <button class="close-btn" onclick="closeModal('modal-fuel')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">รถ</div>
+      <div class="car-select-btns">
+        <button class="car-select-btn active" data-car="1" onclick="selectCar(this,'fuel')">9กข 70 · Almera</button>
+        <button class="car-select-btn" data-car="2" onclick="selectCar(this,'fuel')">3กส 7666 · Jazz</button>
+      </div>
+    </div>
+    <input type="hidden" id="fuel-car" value="1">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">วันที่</label>
+        <input type="date" id="fuel-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">เลขไมล์ (กม.)</label>
+        <input type="number" id="fuel-odo" placeholder="เช่น 90000">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">ชนิดน้ำมัน</div>
+      <div class="fuel-type-btns">
+        <button class="fuel-btn active" onclick="selectFuel(this)">E20</button>
+        <button class="fuel-btn" onclick="selectFuel(this)">E85</button>
+        <button class="fuel-btn" onclick="selectFuel(this)">91</button>
+        <button class="fuel-btn" onclick="selectFuel(this)">95</button>
+        <button class="fuel-btn" onclick="selectFuel(this)">Diesel</button>
+        <button class="fuel-btn" onclick="selectFuel(this)">B7</button>
+      </div>
+    </div>
+    <input type="hidden" id="fuel-type-val" value="E20">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">ราคา/ลิตร (฿)</label>
+        <input type="number" id="fuel-price" step="0.01" placeholder="เช่น 36.5" oninput="calcFuel()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ราคารวม (฿)</label>
+        <input type="number" id="fuel-total" placeholder="เช่น 500" oninput="calcFuel()">
+      </div>
+    </div>
+
+    <div class="calc-preview">
+      <div>
+        <div class="calc-label">ปริมาณน้ำมัน</div>
+        <div class="calc-val" id="fuel-liters">— ลิตร</div>
+      </div>
+      <div style="text-align:right">
+        <div class="calc-label">อัตราสิ้นเปลือง (ประมาณ)</div>
+        <div class="calc-val" id="fuel-economy">— กม./ล.</div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label">สถานที่ (ไม่บังคับ)</label>
+      <input type="text" id="fuel-place" placeholder="เช่น ปตท. แยกรัชดา">
+    </div>
+    <div class="form-group">
+      <label class="form-label">หมายเหตุ (ไม่บังคับ)</label>
+      <input type="text" id="fuel-note" placeholder="...">
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="submitFuel()" id="fuel-submit-btn">บันทึก</button>
+  </div>
+</div>
+
+<!-- MODAL: REPAIR -->
+<div class="modal-overlay" id="modal-repair" onclick="closeModalOutside(event,'modal-repair')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔧 ค่าซ่อม / บำรุง</div>
+      <button class="close-btn" onclick="closeModal('modal-repair')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">รถ</div>
+      <div class="car-select-btns">
+        <button class="car-select-btn active" data-car="1" onclick="selectCar(this,'repair')">9กข 70 · Almera</button>
+        <button class="car-select-btn" data-car="2" onclick="selectCar(this,'repair')">3กส 7666 · Jazz</button>
+      </div>
+    </div>
+    <input type="hidden" id="repair-car" value="1">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">วันที่</label>
+        <input type="date" id="repair-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">เลขไมล์ (กม.) ไม่บังคับ</label>
+        <input type="number" id="repair-odo" placeholder="เช่น 90000">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label" style="margin-bottom:8px">รายการบริการ <span style="color:var(--muted);font-size:11px">(เลือกได้หลายรายการ)</span></div>
+      <div class="service-search-wrap">
+        <input type="text" id="service-search" placeholder="ค้นหาหรือเพิ่มรายการใหม่..." oninput="filterServices(this.value)" autocomplete="off">
+        <button class="service-add-btn" onclick="addCustomService()" title="เพิ่มรายการใหม่">+</button>
+      </div>
+      <div class="service-list" id="service-list"></div>
+      <div class="selected-services" id="selected-services"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">ค่าใช้จ่ายรวม (฿)</label>
+        <input type="number" id="repair-cost" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">สถานที่</label>
+        <input type="text" id="repair-place" placeholder="เช่น อู่ช่างหมู">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">หมายเหตุ (ไม่บังคับ)</label>
+      <input type="text" id="repair-note" placeholder="...">
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="submitRepair()" id="repair-submit-btn">บันทึก</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ─── CONFIG ───
+const CARS = {
+  '1': { plate: '9กข 70', name: 'Nissan Almera', color: 'สีส้ม', cssColor: 'var(--car1)' },
+  '2': { plate: '3กส 7666', name: 'Honda Jazz', color: 'สีเหลือง', cssColor: 'var(--car2)' }
+};
+
+let API_URL = '';
+let records = [];
+let currentPeriod = 'month';
+let currentCar = 'all';
+
+// ─── APPS SCRIPT CODE ───
+const SCRIPT_CODE = `// Car Tracker - Google Apps Script
+// วาง code นี้ใน Apps Script แล้ว Deploy เป็น Web App
+
+function doGet(e) {
+  return handleRequest(e);
+}
+
+function doPost(e) {
+  return handleRequest(e);
+}
+
+function handleRequest(e) {
+  const action = e.parameter.action || (e.postData && JSON.parse(e.postData.contents).action);
+  const data = e.postData ? JSON.parse(e.postData.contents) : e.parameter;
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let result;
+  
+  try {
+    if (action === 'add') {
+      result = addRecord(ss, data);
+    } else if (action === 'getAll') {
+      result = getAllRecords(ss);
+    } else {
+      result = { error: 'Unknown action' };
+    }
+  } catch(err) {
+    result = { error: err.message };
+  }
+  
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateSheet(ss, name, headers) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setBackground('#1a1a2e').setFontColor('#ffffff').setFontWeight('bold');
+  }
+  return sheet;
+}
+
+function addRecord(ss, data) {
+  if (data.type === 'fuel') {
+    const sheet = getOrCreateSheet(ss, 'เติมน้ำมัน', 
+      ['timestamp','date','car','plate','odometer','fuel_type','price_per_liter','total_amount','liters','place','note']);
+    const liters = data.price_per_liter > 0 ? (data.total_amount / data.price_per_liter).toFixed(2) : '';
+    sheet.appendRow([
+      new Date().toISOString(), data.date, data.car, data.plate,
+      data.odometer, data.fuel_type, data.price_per_liter,
+      data.total_amount, liters, data.place || '', data.note || ''
+    ]);
+  } else if (data.type === 'repair') {
+    const sheet = getOrCreateSheet(ss, 'ซ่อม-บำรุง',
+      ['timestamp','date','car','plate','odometer','item','cost','place','note']);
+    sheet.appendRow([
+      new Date().toISOString(), data.date, data.car, data.plate,
+      data.odometer || '', data.item, data.cost,
+      data.place || '', data.note || ''
+    ]);
+  }
+  return { success: true };
+}
+
+function getAllRecords(ss) {
+  const result = [];
+  
+  const fuelSheet = ss.getSheetByName('เติมน้ำมัน');
+  if (fuelSheet && fuelSheet.getLastRow() > 1) {
+    const data = fuelSheet.getRange(2, 1, fuelSheet.getLastRow()-1, 11).getValues();
+    data.forEach(row => {
+      if (row[0]) result.push({
+        type: 'fuel', timestamp: row[0], date: row[1],
+        car: row[2], plate: row[3], odometer: row[4],
+        fuel_type: row[5], price_per_liter: row[6],
+        total_amount: row[7], liters: row[8],
+        place: row[9], note: row[10]
+      });
+    });
+  }
+  
+  const repairSheet = ss.getSheetByName('ซ่อม-บำรุง');
+  if (repairSheet && repairSheet.getLastRow() > 1) {
+    const data = repairSheet.getRange(2, 1, repairSheet.getLastRow()-1, 9).getValues();
+    data.forEach(row => {
+      if (row[0]) result.push({
+        type: 'repair', timestamp: row[0], date: row[1],
+        car: row[2], plate: row[3], odometer: row[4],
+        item: row[5], cost: row[6],
+        place: row[7], note: row[8]
+      });
+    });
+  }
+  
+  result.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+  return { records: result };
+}`;
+
+// ─── INIT ───
+window.onload = async () => {
+  document.getElementById('script-code').value = SCRIPT_CODE;
+  API_URL = 'https://script.google.com/macros/s/AKfycbwvd3b_Z8yBaPSrQmFDHIlxE_qhWsGnODkoSVMmV8fI9lApydzvAQzCWGfQ_3kK_gI9/exec';
+
+  document.getElementById('app').style.display = 'block';
+  setDefaultDates();
+  await loadData();
+  document.getElementById('loading').style.display = 'none';
+};
+
+function setDefaultDates() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('fuel-date').value = today;
+  document.getElementById('repair-date').value = today;
+}
+
+// ─── SETUP ───
+function copyScript() {
+  navigator.clipboard.writeText(SCRIPT_CODE);
+  showToast('คัดลอกแล้ว ✓', 'success');
+}
+
+function saveSetup() {
+  const url = document.getElementById('setup-url').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    showToast('URL ไม่ถูกต้อง', 'error'); return;
+  }
+  localStorage.setItem('car_tracker_url', url);
+  API_URL = url;
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
+  setDefaultDates();
+  loadData().then(() => { document.getElementById('loading').style.display = 'none'; });
+}
+
+// ─── API ───
+async function apiCall(body) {
+  setSyncing(true);
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    const json = await res.json();
+    setSyncing(false);
+    return json;
+  } catch (e) {
+    setSyncing(false, true);
+    throw e;
+  }
+}
+
+async function loadData() {
+  try {
+    const res = await apiCall({ action: 'getAll' });
+    if (res.records) {
+      records = res.records;
+      renderDashboard();
+      renderHistory();
+      renderStats();
+      setSyncing(false);
+    }
+  } catch (e) {
+    showToast('ไม่สามารถโหลดข้อมูลได้', 'error');
+    setSyncing(false, true);
+  }
+}
+
+function setSyncing(on, err = false) {
+  const dot = document.getElementById('sync-dot');
+  dot.className = 'sync-indicator' + (err ? ' error' : on ? ' syncing' : '');
+  dot.title = err ? 'เชื่อมต่อไม่ได้' : on ? 'กำลังซิงค์...' : 'พร้อมใช้งาน';
+}
+
+// ─── DASHBOARD ───
+function renderDashboard() {
+  // Odometer & spend per car
+  for (const car of ['1', '2']) {
+    const carRecords = records.filter(r => r.car == car);
+    const withOdo = carRecords.filter(r => r.odometer);
+    const maxOdo = withOdo.length ? Math.max(...withOdo.map(r => Number(r.odometer))) : null;
+    document.getElementById(`odo-${car}`).textContent = maxOdo ? maxOdo.toLocaleString() : '—';
+
+    const thisYear = new Date().getFullYear();
+    const yearSpend = carRecords.filter(r => {
+      if (!r.date) return false;
+      return new Date(r.date).getFullYear() === thisYear;
+    }).reduce((s, r) => s + Number(r.total_amount || r.cost || 0), 0);
+    document.getElementById(`spend-${car}`).textContent = yearSpend ? '฿' + yearSpend.toLocaleString() : '—';
+  }
+
+  // Recent 5
+  const recent = records.slice(0, 5);
+  document.getElementById('recent-list').innerHTML = recent.length
+    ? recent.map(r => historyItemHTML(r)).join('')
+    : '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">ยังไม่มีรายการ เริ่มบันทึกได้เลย!</div></div>';
+}
+
+// ─── HISTORY ───
+function renderHistory() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const carFilter = document.getElementById('filter-car').value;
+  const typeFilter = document.getElementById('filter-type').value;
+
+  let filtered = records.filter(r => {
+    const text = [r.item, r.plate, r.place, r.fuel_type, r.note, r.car].join(' ').toLowerCase();
+    if (q && !text.includes(q)) return false;
+    if (carFilter && r.car != carFilter) return false;
+    if (typeFilter && r.type !== typeFilter) return false;
+    return true;
+  });
+
+  document.getElementById('history-list').innerHTML = filtered.length
+    ? filtered.map(r => historyItemHTML(r)).join('')
+    : '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">ไม่พบรายการที่ค้นหา</div></div>';
+}
+
+function historyItemHTML(r) {
+  const isFuel = r.type === 'fuel';
+  const car = CARS[r.car] || {};
+  const amount = isFuel ? r.total_amount : r.cost;
+  const title = isFuel ? `เติม ${r.fuel_type || ''}` : r.item;
+  const dateStr = r.date ? new Date(r.date + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '';
+  const liters = isFuel && r.liters ? `${Number(r.liters).toFixed(1)} ล.` : '';
+  const odo = r.odometer ? `${Number(r.odometer).toLocaleString()} กม.` : '';
+  const place = r.place || '';
+
+  return `<div class="history-item">
+    <div class="history-icon ${r.type}">${isFuel ? '⛽' : '🔧'}</div>
+    <div class="history-info">
+      <div class="history-title">${title}</div>
+      <div class="history-meta">
+        ${dateStr ? `<span>📅 ${dateStr}</span>` : ''}
+        ${odo ? `<span>🛣 ${odo}</span>` : ''}
+        ${liters ? `<span>💧 ${liters}</span>` : ''}
+        ${place ? `<span>📍 ${place}</span>` : ''}
+      </div>
+    </div>
+    <div class="history-amount">
+      <div class="amount ${isFuel ? 'fuel-color' : 'repair-color'}">฿${Number(amount || 0).toLocaleString()}</div>
+      <div class="car-badge car-badge-${r.car}">${car.plate || ''}</div>
+    </div>
+  </div>`;
+}
+
+// ─── STATS ───
+function setCarFilter(car, el) {
+  currentCar = car;
+  document.querySelectorAll('.stats-car-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderStats();
+}
+
+function setPeriod(p, el) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderStats();
+}
+
+function parseDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  const s = String(val).trim();
+  let d = new Date(s);
+  if (!isNaN(d)) return d;
+  const parts = s.split('/');
+  if (parts.length === 3) {
+    d = new Date(parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0'));
+    if (!isNaN(d)) return d;
+  }
+  return null;
+}
+
+function filterByPeriod(recs) {
+  const now = new Date();
+  return recs.filter(r => {
+    if (currentPeriod === 'all') return true;
+    const d = parseDate(r.date);
+    if (!d) return false;
+    if (currentPeriod === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (currentPeriod === 'year') return d.getFullYear() === now.getFullYear();
+    return true;
+  });
+}
+
+function renderStats() {
+  const periodFiltered = filterByPeriod(records);
+  const filtered = currentCar === 'all'
+    ? periodFiltered
+    : periodFiltered.filter(r => r.car == currentCar);
+
+  const fuelRecs = filtered.filter(r => r.type === 'fuel');
+  const repairRecs = filtered.filter(r => r.type === 'repair');
+
+  const totalFuel = fuelRecs.reduce((s, r) => s + Number(r.total_amount || 0), 0);
+  const totalRepair = repairRecs.reduce((s, r) => s + Number(r.cost || 0), 0);
+  const total = totalFuel + totalRepair;
+
+  document.getElementById('s-total').textContent = '฿' + total.toLocaleString();
+  document.getElementById('s-fuel').textContent = '฿' + totalFuel.toLocaleString();
+  document.getElementById('s-repair').textContent = '฿' + totalRepair.toLocaleString();
+  document.getElementById('s-count').textContent = filtered.length;
+
+  // Car breakdown chart — แสดงเฉพาะตอนดูรถทุกคัน
+  const carChartCard = document.getElementById('car-chart').closest('.section-card');
+  if (currentCar === 'all') {
+    carChartCard.style.display = '';
+    const car1Total = periodFiltered.filter(r => r.car == '1').reduce((s, r) => s + Number(r.total_amount || r.cost || 0), 0);
+    const car2Total = periodFiltered.filter(r => r.car == '2').reduce((s, r) => s + Number(r.total_amount || r.cost || 0), 0);
+    const maxVal = Math.max(car1Total, car2Total, 1);
+    document.getElementById('car-chart').innerHTML = `
+      <div class="chart-bar-row">
+        <div class="chart-bar-label" style="color:var(--car1)">Almera</div>
+        <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(car1Total/maxVal*100).toFixed(1)}%;background:var(--car1)"></div></div>
+        <div class="chart-bar-val">฿${car1Total.toLocaleString()}</div>
+      </div>
+      <div class="chart-bar-row">
+        <div class="chart-bar-label" style="color:var(--car2)">Jazz</div>
+        <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${(car2Total/maxVal*100).toFixed(1)}%;background:var(--car2)"></div></div>
+        <div class="chart-bar-val">฿${car2Total.toLocaleString()}</div>
+      </div>`;
+  } else {
+    carChartCard.style.display = 'none';
+  }
+
+  // Fuel economy — แสดงเฉพาะรถที่เลือก หรือทั้งคู่ถ้าเลือกทุกคัน
+  const carsToShow = currentCar === 'all' ? ['1', '2'] : [currentCar];
+  document.getElementById('economy-display').style.gridTemplateColumns = carsToShow.length === 1 ? '1fr' : '1fr 1fr';
+
+  for (const car of ['1', '2']) {
+    const ecoEl = document.getElementById(`eco-${car}`)?.closest('div')?.parentElement;
+    if (ecoEl) ecoEl.style.display = carsToShow.includes(car) ? '' : 'none';
+  }
+
+  for (const car of carsToShow) {
+    const fills = records.filter(r => r.type === 'fuel' && r.car == car && r.odometer && r.liters)
+      .sort((a, b) => Number(a.odometer) - Number(b.odometer));
+
+    let eco = null;
+    if (fills.length >= 2) {
+      let totalKm = 0, totalL = 0;
+      for (let i = 1; i < fills.length; i++) {
+        totalKm += Number(fills[i].odometer) - Number(fills[i-1].odometer);
+        totalL += Number(fills[i].liters);
+      }
+      eco = totalL > 0 ? (totalKm / totalL) : null;
+    }
+
+    document.getElementById(`eco-${car}`).textContent = eco ? eco.toFixed(1) : '—';
+    document.getElementById(`eco-${car}-sub`).textContent = fills.length >= 2 ? `จาก ${fills.length} ครั้ง` : 'ยังไม่มีข้อมูลพอ';
+  }
+
+  // Top expenses
+  const sorted = [...filtered].sort((a, b) => Number(b.total_amount || b.cost || 0) - Number(a.total_amount || a.cost || 0)).slice(0, 6);
+  const tbody = document.querySelector('#top-table tbody');
+  tbody.innerHTML = sorted.length ? sorted.map(r => {
+    const car = CARS[r.car] || {};
+    const amount = Number(r.total_amount || r.cost || 0);
+    return `<tr>
+      <td>${r.type === 'fuel' ? '⛽ เติม ' + (r.fuel_type || '') : '🔧 ' + (r.item || '')}</td>
+      <td style="color:var(--car${r.car});font-family:var(--mono);font-size:12px">${car.plate || ''}</td>
+      <td class="amount-col" style="color:${r.type==='fuel'?'var(--green)':'var(--blue)'}">฿${amount.toLocaleString()}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">ไม่มีข้อมูลในช่วงนี้</td></tr>';
+}
+
+// ─── FORMS ───
+function selectCar(btn, form) {
+  btn.closest('.car-select-btns').querySelectorAll('.car-select-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`${form}-car`).value = btn.dataset.car;
+}
+
+function selectFuel(btn) {
+  document.querySelectorAll('.fuel-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('fuel-type-val').value = btn.textContent;
+}
+
+function calcFuel() {
+  const price = parseFloat(document.getElementById('fuel-price').value) || 0;
+  const total = parseFloat(document.getElementById('fuel-total').value) || 0;
+
+  if (price > 0 && total > 0) {
+    const liters = total / price;
+    document.getElementById('fuel-liters').textContent = liters.toFixed(2) + ' ลิตร';
+
+    // Estimate economy from last fill of selected car
+    const car = document.getElementById('fuel-car').value;
+    const lastFill = records.filter(r => r.type === 'fuel' && r.car == car && r.odometer).sort((a,b) => Number(b.odometer)-Number(a.odometer))[0];
+    const curOdo = parseFloat(document.getElementById('fuel-odo').value) || 0;
+    if (lastFill && curOdo > Number(lastFill.odometer)) {
+      const km = curOdo - Number(lastFill.odometer);
+      document.getElementById('fuel-economy').textContent = (km / liters).toFixed(1) + ' กม./ล.';
+    } else {
+      document.getElementById('fuel-economy').textContent = '— กม./ล.';
+    }
+  } else {
+    document.getElementById('fuel-liters').textContent = '— ลิตร';
+    document.getElementById('fuel-economy').textContent = '— กม./ล.';
+  }
+}
+
+async function submitFuel() {
+  const car = document.getElementById('fuel-car').value;
+  const date = document.getElementById('fuel-date').value;
+  const odo = document.getElementById('fuel-odo').value;
+  const fuelType = document.getElementById('fuel-type-val').value;
+  const price = document.getElementById('fuel-price').value;
+  const total = document.getElementById('fuel-total').value;
+  const place = document.getElementById('fuel-place').value;
+  const note = document.getElementById('fuel-note').value;
+
+  if (!date || !odo || !price || !total) { showToast('กรุณากรอกข้อมูลให้ครบ', 'error'); return; }
+
+  const btn = document.getElementById('fuel-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> กำลังบันทึก...';
+
+  try {
+    await apiCall({
+      action: 'add', type: 'fuel', car, plate: CARS[car].plate,
+      date, odometer: odo, fuel_type: fuelType,
+      price_per_liter: price, total_amount: total, place, note
+    });
+
+    const liters = (total / price).toFixed(2);
+    records.unshift({ type: 'fuel', car, plate: CARS[car].plate, date, odometer: odo, fuel_type: fuelType, price_per_liter: price, total_amount: total, liters, place, note, timestamp: new Date().toISOString() });
+    renderDashboard(); renderHistory(); renderStats();
+    closeModal('modal-fuel');
+    showToast('บันทึกสำเร็จ ✓', 'success');
+    document.getElementById('fuel-odo').value = '';
+    document.getElementById('fuel-price').value = '';
+    document.getElementById('fuel-total').value = '';
+    document.getElementById('fuel-place').value = '';
+    document.getElementById('fuel-note').value = '';
+    calcFuel();
+  } catch(e) {
+    showToast('บันทึกไม่สำเร็จ', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'บันทึก';
+  }
+}
+
+
+// ─── SERVICE LIST ───
+let serviceList = [];
+let selectedServices = [];
+
+async function loadServices() {
+  try {
+    const res = await apiCall({ action: 'getServices' });
+    if (res.services) serviceList = res.services;
+  } catch(e) {
+    console.error('load services failed', e);
+  }
+}
+
+async function openRepairModal() {
+  selectedServices = [];
+  document.getElementById('service-search').value = '';
+  document.getElementById('service-list').classList.remove('open');
+  renderSelectedTags();
+  // โหลดรายการจาก Sheet ทุกครั้งที่เปิด
+  const listEl = document.getElementById('service-list');
+  listEl.innerHTML = '<div style="padding:12px 14px;font-size:12px;color:var(--muted)">กำลังโหลด...</div>';
+  listEl.classList.add('open');
+  await loadServices();
+  filterServices('');
+  openModal('repair');
+}
+
+function filterServices(q) {
+  const list = document.getElementById('service-list');
+  const filtered = q ? serviceList.filter(s => s.includes(q)) : serviceList;
+  list.innerHTML = filtered.map(s => {
+    const checked = selectedServices.includes(s);
+    return `<div class="service-item ${checked?'checked':''}" onclick="toggleService('${s}')">
+      <span>${s}</span>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span class="service-item-check">${checked ? '✓' : ''}</span>
+        <button class="service-item-del" onclick="deleteServiceItem(event,'${s}')">ลบ</button>
+      </div>
+    </div>`;
+  }).join('') || `<div style="padding:12px 14px;font-size:12px;color:var(--muted)">ไม่พบรายการ กด + เพื่อเพิ่มใหม่</div>`;
+  list.classList.add('open');
+}
+
+function toggleService(name) {
+  const idx = selectedServices.indexOf(name);
+  if (idx >= 0) selectedServices.splice(idx, 1);
+  else selectedServices.push(name);
+  filterServices(document.getElementById('service-search').value);
+  renderSelectedTags();
+}
+
+async function addCustomService() {
+  const q = document.getElementById('service-search').value.trim();
+  if (!q) return;
+  if (!serviceList.includes(q)) {
+    try {
+      await apiCall({ action: 'addService', name: q });
+      serviceList.push(q);
+    } catch(e) {
+      showToast('เพิ่มรายการไม่สำเร็จ', 'error'); return;
+    }
+  }
+  if (!selectedServices.includes(q)) selectedServices.push(q);
+  document.getElementById('service-search').value = '';
+  filterServices('');
+  renderSelectedTags();
+}
+
+async function deleteServiceItem(e, name) {
+  e.stopPropagation();
+  if (!confirm('ลบ "' + name + '" ออกจากรายการ?')) return;
+  try {
+    await apiCall({ action: 'deleteService', name });
+    serviceList = serviceList.filter(s => s !== name);
+    selectedServices = selectedServices.filter(s => s !== name);
+    filterServices(document.getElementById('service-search').value);
+    renderSelectedTags();
+    showToast('ลบรายการแล้ว', 'success');
+  } catch(e) {
+    showToast('ลบไม่สำเร็จ', 'error');
+  }
+}
+
+function renderSelectedTags() {
+  document.getElementById('selected-services').innerHTML = selectedServices.map(s =>
+    `<div class="service-tag">${s}<button class="service-tag-remove" onclick="toggleService('${s}')">×</button></div>`
+  ).join('');
+}
+
+// ปิด dropdown เมื่อคลิกข้างนอก
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.service-search-wrap');
+  const list = document.getElementById('service-list');
+  if (wrap && !wrap.contains(e.target)) list && list.classList.remove('open');
+});
+
+async function submitRepair() {
+  const car = document.getElementById('repair-car').value;
+  const date = document.getElementById('repair-date').value;
+  const odo = document.getElementById('repair-odo').value;
+  const item = selectedServices.length > 0 ? selectedServices.join(', ') : '';
+  const cost = document.getElementById('repair-cost').value;
+  const place = document.getElementById('repair-place').value;
+  const note = document.getElementById('repair-note').value;
+
+  if (!date || !item) { showToast('กรุณาเลือกรายการบริการอย่างน้อย 1 รายการ', 'error'); return; }
+  if (!cost) { showToast('กรุณากรอกค่าใช้จ่าย', 'error'); return; }
+
+  const btn = document.getElementById('repair-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> กำลังบันทึก...';
+
+  try {
+    await apiCall({
+      action: 'add', type: 'repair', car, plate: CARS[car].plate,
+      date, odometer: odo, item, cost, place, note
+    });
+
+    records.unshift({ type: 'repair', car, plate: CARS[car].plate, date, odometer: odo, item, cost, place, note, timestamp: new Date().toISOString() });
+    renderDashboard(); renderHistory(); renderStats();
+    closeModal('modal-repair');
+    showToast('บันทึกสำเร็จ ✓', 'success');
+    selectedServices = [];
+    document.getElementById('repair-odo').value = '';
+    document.getElementById('repair-cost').value = '';
+    document.getElementById('repair-place').value = '';
+    document.getElementById('repair-note').value = '';
+    renderSelectedTags();
+  } catch(e) {
+    showToast('บันทึกไม่สำเร็จ', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'บันทึก';
+  }
+}
+
+// ─── UI HELPERS ───
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function openModal(id) {
+  document.getElementById(`modal-${id}`).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function closeModalOutside(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 2500);
+}
+</script>
+</body>
+</html>
