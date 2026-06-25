@@ -454,7 +454,7 @@
             date: r.date,
             dateObj: new Date(r.date),
             odometer: r.odometer_km,
-            title: `เติมน้ำมัน - ${r.fuel_type}`,
+            title: `เติมน้ำมัน - ${r.fuel_type} (${r.price_per_liter} บ./ลิตร)`,
             cost: r.total_cost,
             meta: `ปั๊ม: ${r.station || 'ไม่ระบุ'} | ${r.efficiency_km_per_liter} กม./ลิตร`,
             detail: r
