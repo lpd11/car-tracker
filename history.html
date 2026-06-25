@@ -205,15 +205,16 @@
       document.getElementById('modal-edit-btn').addEventListener('click', handleModalEditClick);
       document.getElementById('modal-delete-btn').addEventListener('click', handleModalDeleteClick);
       
-      // 3. Load Dashboard Stats & Chart & History Feed List
-      await loadDashboardData();
-      await loadHistoryList();
+      // 3. Load Dashboard Stats, Chart & History Feed List in one optimized API request
+      await loadAllHistoryData();
     }
     
     /**
-     * Fetch and render dashboard overview widget stats & chart
+     * Fetch all history list items and dashboard summary in a single optimized request
      */
-    async function loadDashboardData() {
+    async function loadAllHistoryData() {
+      showLoading('กำลังโหลดประวัติย้อนหลัง...');
+      
       const today = new Date();
       const currentMonthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
       
@@ -223,17 +224,26 @@
       document.querySelectorAll('.month-lbl').forEach(el => el.textContent = `(${monthLabel})`);
       
       try {
-        const summary = await getDashboardSummary(activeCar.id, currentMonthStr);
+        const result = await getHistoryPageData(activeCar.id, currentMonthStr);
         
-        // Update Widgets
+        // 1. Update dashboard widgets
+        const summary = result.summary;
         document.getElementById('dash-total-fuel').textContent = formatCurrency(summary.total_fuel_cost);
         document.getElementById('dash-avg-eff').textContent = summary.average_efficiency > 0 ? `${summary.average_efficiency} กม./ลิตร` : '0.00';
         document.getElementById('dash-total-maint').textContent = formatCurrency(summary.total_maintenance_cost);
         
-        // Update / Draw Chart
+        // 2. Render chart
         drawChart(summary.chart);
+        
+        // 3. Load data for history rendering
+        fuelRecords = result.fuel;
+        maintenanceRecords = result.maintenance;
+        
+        renderHistoryList();
       } catch (err) {
-        console.error('Failed to load dashboard summary:', err);
+        console.error('Failed to load history page data:', err);
+      } finally {
+        hideLoading();
       }
     }
     
@@ -302,22 +312,7 @@
       });
     }
     
-    /**
-     * Fetch all history list items
-     */
-    async function loadHistoryList() {
-      showLoading('กำลังโหลดประวัติย้อนหลัง...');
-      try {
-        fuelRecords = await getFuelRecords(activeCar.id);
-        maintenanceRecords = await getMaintenanceRecords(activeCar.id);
-        
-        renderHistoryList();
-      } catch (err) {
-        console.error('Failed to load history lists:', err);
-      } finally {
-        hideLoading();
-      }
-    }
+    // Removed loadHistoryList (merged into loadAllHistoryData)
     
     /**
      * Generate descriptive summary title based on items list
