@@ -28,6 +28,7 @@
 ```
 Code.gs              — Apps Script backend (doGet/doPost API)
 appsscript.json      — Apps Script config (timezone: Asia/Bangkok)
+home.html            — หน้า landing / navigation สำหรับเทสบน PC (ไม่ใช้ LIFF)
 fuel.html            — หน้าบันทึกเติมน้ำมัน
 maintenance.html     — หน้าบันทึกซ่อมบำรุง
 history.html         — หน้าประวัติ + Dashboard + รายงาน
@@ -60,6 +61,11 @@ css/style.css        — Shared styles
 - [x] แก้ bug LINE Flex Message: `rgba()` → hex (`#FFFFFF1A`) ที่ทำให้ส่งรายงานไม่ได้
 - [x] ตั้งค่า GitHub repo และ GitHub Pages hosting
 - [x] เพิ่ม scope `chat_message.write` ใน LINE Developer Console (ทำโดย user)
+- [x] **home.html** — หน้า navigation landing สำหรับเทสบน PC: เลือกรถ + 3 nav cards ลิงก์ไปแต่ละหน้า
+- [x] Import ข้อมูลประวัติจาก Drivvo CSV (33 fuel records + 7 maintenance visits สำหรับ Nissan Almera)
+- [x] แสดงราคา/ลิตร ในหัวการ์ดประวัติเติมน้ำมัน เช่น `เติมน้ำมัน - E20 (35.5 บ./ลิตร)`
+- [x] ช่องปั๊มน้ำมันใน `fuel.html` แยกเป็น dropdown แบรนด์ (ปตท./บางจาก/PT/Shell/Caltex/อื่นๆ) + text สาขา
+- [x] ลบ เอสโซ่ ออกจาก dropdown (ไม่มีปั๊มเอสโซ่ในไทยแล้ว — บางจากซื้อกิจการปี 2017)
 
 ---
 
