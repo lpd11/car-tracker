@@ -1,0 +1,25 @@
+{
+  "name": "Car Tracker",
+  "short_name": "Car Tracker",
+  "description": "บันทึกค่าใช้จ่ายรถยนต์ในครอบครัว",
+  "start_url": "/car-tracker/home.html",
+  "scope": "/car-tracker/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d22",
+  "theme_color": "#f5c518",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
