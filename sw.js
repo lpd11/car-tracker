@@ -1,4 +1,4 @@
-const CACHE = 'car-tracker-v1';
+const CACHE = 'car-tracker-v6';
 const ASSETS = [
   '/car-tracker/',
   '/car-tracker/home.html',
@@ -11,6 +11,8 @@ const ASSETS = [
   '/car-tracker/favicon.png',
   '/car-tracker/icon-192.png',
   '/car-tracker/icon-512.png',
+  '/car-tracker/Files/M.png',
+  '/car-tracker/Files/FM.png',
 ];
 
 self.addEventListener('install', e => {

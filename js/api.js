@@ -20,26 +20,63 @@ if (isMockMode) {
 }
 
 // ==========================================
-// CLIENT-SIDE CACHE (in-memory, per session)
+// CLIENT-SIDE CACHE (persistent — localStorage, stale-while-revalidate)
+//
+// เก็บข้อมูลประวัติล่าสุดไว้ในเครื่อง เพื่อให้เปิดหน้าครั้งต่อ ๆ ไปขึ้นทันที
+// (ไม่ต้องรอ Apps Script cold start ~20 วิ) แล้วค่อยดึงของใหม่เบื้องหลัง
 // ==========================================
-const _historyCache = {};
-const _HISTORY_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const _HISTORY_CACHE_PREFIX = 'car_tracker_history_cache_';
+const _HISTORY_CACHE_TTL = 2 * 60 * 1000; // ถือว่า "สด" ภายใน 2 นาที (ข้ามการ refresh เบื้องหลัง)
 
+function _historyCacheKey(carId) {
+  return _HISTORY_CACHE_PREFIX + String(carId);
+}
+
+/**
+ * คืนข้อมูล cache ที่เก็บไว้ (ไม่ว่าจะเก่าแค่ไหน) — null ถ้าไม่มี/อ่านไม่ได้
+ * ให้ SWR โชว์ของเก่าทันทีแล้วค่อย refresh
+ */
 function getHistoryCache(carId) {
-  const entry = _historyCache[String(carId)];
-  if (!entry || (Date.now() - entry.ts) > _HISTORY_CACHE_TTL) return null;
-  return entry.data;
+  try {
+    const raw = localStorage.getItem(_historyCacheKey(carId));
+    if (!raw) return null;
+    const entry = JSON.parse(raw);
+    return entry && entry.data ? entry.data : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * cache ยัง "สด" อยู่ไหม (ภายใน TTL) — ใช้ตัดสินว่าจะข้าม background refresh หรือไม่
+ */
+function isHistoryCacheFresh(carId) {
+  try {
+    const raw = localStorage.getItem(_historyCacheKey(carId));
+    if (!raw) return false;
+    const entry = JSON.parse(raw);
+    return entry && (Date.now() - entry.ts) <= _HISTORY_CACHE_TTL;
+  } catch (e) {
+    return false;
+  }
 }
 
 function setHistoryCache(carId, data) {
-  _historyCache[String(carId)] = { data, ts: Date.now() };
+  try {
+    localStorage.setItem(_historyCacheKey(carId), JSON.stringify({ data, ts: Date.now() }));
+  } catch (e) {
+    // localStorage เต็ม/ปิด — ข้ามไป ไม่ให้กระทบการทำงานหลัก
+    console.warn('History cache write failed:', e);
+  }
 }
 
 function invalidateHistoryCache(carId) {
   if (carId != null) {
-    delete _historyCache[String(carId)];
+    localStorage.removeItem(_historyCacheKey(carId));
   } else {
-    Object.keys(_historyCache).forEach(k => delete _historyCache[k]);
+    Object.keys(localStorage)
+      .filter(k => k.startsWith(_HISTORY_CACHE_PREFIX))
+      .forEach(k => localStorage.removeItem(k));
   }
 }
 

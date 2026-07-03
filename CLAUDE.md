@@ -2,7 +2,9 @@
 
 ## โปรเจคคืออะไร
 
-แอปบันทึกค่าใช้จ่ายรถยนต์ 2 คันในครอบครัว ผ่าน **LINE LIFF** โดยใช้ **Google Apps Script + Google Sheets** เป็น backend และ **GitHub Pages** เป็น frontend hosting
+แอปบันทึกค่าใช้จ่ายรถยนต์ 2 คันในครอบครัว เป็น **PWA (Web App เต็มตัว)** — เพิ่มไปหน้าจอหลักบนมือถือได้ทั้ง Android/iPhone โดยใช้ **Google Apps Script + Google Sheets** เป็น backend และ **GitHub Pages** เป็น frontend hosting
+
+> เดิมทีเป็น LINE LIFF — **ถอด LIFF ออกทั้งหมดแล้ว** (ก.ค. 2026) เปลี่ยนเป็น web app + ระบบโปรไฟล์ในเครื่องแทน
 
 รถที่ติดตาม:
 - Nissan Almera 2020 (ส้ม) ทะเบียน 9กข 70
@@ -17,7 +19,8 @@
 | Frontend | HTML/CSS/JS (ไม่มี framework) + FontAwesome + Chart.js |
 | Backend | Google Apps Script (Web App) — `Code.gs` |
 | Database | Google Sheets (5 sheets) |
-| Platform | LINE LIFF (3 LIFF IDs แยกต่างหาก) |
+| Platform | PWA (installable web app) — ไม่มี LINE LIFF แล้ว |
+| Auth | Profile switcher ในเครื่อง (Liang / Koy) เก็บใน localStorage — ไม่มี login จริง |
 | Hosting | GitHub Pages (`https://eliang1111.github.io/car-tracker/`) |
 | Deploy tool | clasp (scriptId: `1MDVQFzjLE068BxzGoYrINAWlzsXBkTl6BLd_5NfxbADR8pJuMQzfdn09`) |
 
@@ -28,11 +31,11 @@
 ```
 Code.gs              — Apps Script backend (doGet/doPost API)
 appsscript.json      — Apps Script config (timezone: Asia/Bangkok)
-home.html            — หน้า landing / navigation สำหรับเทสบน PC (ไม่ใช้ LIFF)
+home.html            — หน้าหลักจริงของแอป: ทักทายชื่อโปรไฟล์ + 3 เมนู (mobile-first, ไม่มี car selector)
 fuel.html            — หน้าบันทึกเติมน้ำมัน
 maintenance.html     — หน้าบันทึกซ่อมบำรุง
-history.html         — หน้าประวัติ + Dashboard + รายงาน
-js/app.js            — Shared utilities, LIFF init, car toggle, format helpers
+history.html         — หน้าประวัติ + Dashboard + รายงาน (ดูในแอป ไม่มีส่งเข้า LINE แล้ว)
+js/app.js            — Shared utilities, profile picker/switcher, car toggle, format helpers
 js/api.js            — API bridge (live mode + mock localStorage mode + client cache)
 css/style.css        — Shared styles
 manifest.json        — PWA manifest (ชื่อแอป, icon, สี, start_url)
@@ -104,12 +107,21 @@ clasp push   # อัพโหลด Code.gs ขึ้น Apps Script
 
 ---
 
-## LIFF IDs
+## ระบบโปรไฟล์ (แทน LINE login)
 
-| หน้า | LIFF ID |
+- โปรไฟล์กำหนดไว้ล่วงหน้าใน `js/app.js` → `PROFILES`: **Liang** (ไอคอน `fa-person`) และ **Koy** (ไอคอน `fa-person-dress`)
+- เปิดแอปครั้งแรก → หน้าเลือกโปรไฟล์ (full-screen overlay, สร้างโดย `renderProfilePicker()`) — จำไว้ถามครั้งเดียว
+- แตะ badge/chip ที่ header หรือหน้า home → `switchProfile()` เปลี่ยนคน (แล้ว `location.reload()`)
+- `user_name` ที่บันทึกลง Sheets = ชื่อโปรไฟล์ที่เลือก (`currentUser.displayName`)
+
+### localStorage keys
+
+| key | ความหมาย |
 |---|---|
-| fuel.html | `2010486446-X0yj8FUH` |
-| maintenance.html | `2010486446-vdtoyrHt` |
-| history.html | `2010486446-QZGGJYTL` |
+| `car_tracker_profile` | โปรไฟล์ปัจจุบัน (`liang` / `koy`) |
+| `car_tracker_active_car_liang` | รถล่าสุดของ Liang (1 / 2) |
+| `car_tracker_active_car_koy` | รถล่าสุดของ Koy (1 / 2) |
 
-> LIFF app ทั้ง 3 ต้องมี scope: `profile`, `chat_message.write` (history เท่านั้นที่ใช้ sendMessages)
+> **จำรถล่าสุดแยกตามคน** — ผ่าน helper `activeCarStorageKey()` ใน `app.js` เข้าเมนูไหนก็เด้งรถคันล่าสุดของคนนั้นให้ (ครั้งแรกสุด default = Nissan Almera / id 1)
+
+> LIFF apps เดิม 3 ตัวใน LINE Developer Console ไม่ได้ใช้แล้ว (ปล่อยทิ้งไว้ได้ ไม่กระทบ)

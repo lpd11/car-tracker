@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ประวัติและค้นหา - Car Tracker</title>
+  <meta name="theme-color" content="#0d0d16">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.json">
   
   <!-- FontAwesome Icons -->
@@ -186,19 +191,31 @@
         <i class="fa-solid fa-times"></i>
       </button>
     </div>
-    
+
+    <!-- Car Selector (เลือกรถได้ในหน้ารายงาน) -->
+    <div class="report-car-pills" id="report-car-pills">
+      <!-- rendered by JS -->
+    </div>
+
     <!-- Tab Controls -->
     <div class="report-tabs">
-      <button type="button" class="report-tab active" data-report-tab="monthly">รายงานรายเดือน</button>
-      <button type="button" class="report-tab" data-report-tab="yearly">รายงานรายปี</button>
+      <button type="button" class="report-tab active" data-report-tab="monthly">รายเดือน</button>
+      <button type="button" class="report-tab" data-report-tab="fuel">สรุปน้ำมัน</button>
+      <button type="button" class="report-tab" data-report-tab="yearly">รายปี</button>
     </div>
-    
+
     <!-- Filter Section (Monthly) -->
     <div class="report-filter" id="report-filter-monthly">
       <label>ประจำเดือน:</label>
       <input type="month" id="report-month-input" class="report-input-month">
     </div>
-    
+
+    <!-- Filter Section (Fuel Summary) -->
+    <div class="report-filter" id="report-filter-fuel" style="display: none;">
+      <label>ประจำเดือน:</label>
+      <input type="month" id="report-fuel-month-input" class="report-input-month">
+    </div>
+
     <!-- Filter Section (Yearly) -->
     <div class="report-filter" id="report-filter-yearly" style="display: none;">
       <label>ประจำปี:</label>
@@ -235,16 +252,46 @@
       <div class="report-breakdown-list" id="report-breakdown-container">
         <!-- Progress rows dynamically populated -->
       </div>
-      
-      <!-- LINE Share Button -->
-      <div class="report-footer">
-        <button type="button" class="btn btn-success" id="btn-share-report" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: #06c755; border: none; color: #fff;">
-          <i class="fa-solid fa-share-nodes"></i>
-          <span>ส่งรายงานเข้าแชท LINE</span>
-        </button>
+    </div>
+
+    <!-- FUEL SUMMARY CONTENT -->
+    <div id="report-content-fuel" style="display: none;">
+      <div class="report-cards-grid">
+        <div class="report-card fuel">
+          <div class="report-card-val" id="fs-total-cost">฿0.00</div>
+          <div class="report-card-lbl">ค่าน้ำมันรวมเดือนนี้</div>
+        </div>
+        <div class="report-cards-row">
+          <div class="report-card">
+            <div class="report-card-val" id="fs-count">0</div>
+            <div class="report-card-lbl">จำนวนครั้งที่เติม</div>
+          </div>
+          <div class="report-card">
+            <div class="report-card-val" id="fs-liters">0</div>
+            <div class="report-card-lbl">ลิตรรวม</div>
+          </div>
+        </div>
+        <div class="report-cards-row">
+          <div class="report-card">
+            <div class="report-card-val" id="fs-avg-price">฿0.00</div>
+            <div class="report-card-lbl">ราคาเฉลี่ย/ลิตร</div>
+          </div>
+          <div class="report-card">
+            <div class="report-card-val" id="fs-avg-eff">—</div>
+            <div class="report-card-lbl">สิ้นเปลืองเฉลี่ย (กม./ล.)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="report-section-title">
+        <i class="fa-solid fa-gas-pump" style="color: var(--color-gold); margin-right: 6px;"></i>
+        <span>รายการเติมน้ำมันในเดือนนี้</span>
+      </div>
+      <div class="report-breakdown-list" id="fs-list-container">
+        <!-- Fuel rows dynamically populated -->
       </div>
     </div>
-    
+
     <!-- YEARLY REPORT CONTENT -->
     <div id="report-content-yearly" style="display: none;">
       <div class="report-section-title">
@@ -259,10 +306,9 @@
     </div>
   </div>
 
-  <!-- Chart.js and LINE LIFF SDK -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  
+
   <!-- App JS & API Script -->
   <script src="js/app.js"></script>
   <script src="js/api.js"></script>
@@ -318,11 +364,16 @@
       const cached = getHistoryCache(carId);
 
       if (cached) {
+        // มีข้อมูลเก่าในเครื่อง → โชว์ทันที (ไม่ต้องรอ network)
         applyHistoryData(cached);
-        refreshHistoryInBackground(carId, currentMonthStr);
+        // ดึงของใหม่เบื้องหลังเฉพาะตอน cache ไม่สดแล้ว
+        if (!isHistoryCacheFresh(carId)) {
+          refreshHistoryInBackground(carId, currentMonthStr);
+        }
         return;
       }
 
+      // ครั้งแรกสุด (ยังไม่มี cache) — ต้องรอ network พร้อม spinner
       showLoading('กำลังโหลดประวัติย้อนหลัง...');
       try {
         const result = await getHistoryPageData(carId, currentMonthStr);
@@ -336,17 +387,21 @@
     }
 
     function applyHistoryData(result) {
+      // อัปเดตข้อมูลก่อนเป็นอย่างแรก เพื่อไม่ให้ error ตอน render (เช่น drawChart)
+      // ทำให้ fuelRecords/maintenanceRecords ค้างเป็นข้อมูลรถคันเก่า
+      fuelRecords = result.fuel;
+      maintenanceRecords = result.maintenance;
+
       const summary = result.summary;
       document.getElementById('dash-total-fuel').textContent = formatCurrency(summary.total_fuel_cost);
       document.getElementById('dash-avg-eff').textContent = summary.average_efficiency > 0 ? `${summary.average_efficiency} กม./ลิตร` : '0.00';
       document.getElementById('dash-total-maint').textContent = formatCurrency(summary.total_maintenance_cost);
-      drawChart(summary.chart);
-      fuelRecords = result.fuel;
-      maintenanceRecords = result.maintenance;
       renderHistoryList();
+      drawChart(summary.chart);
     }
 
     async function refreshHistoryInBackground(carId, month) {
+      showRefreshIndicator();
       try {
         const fresh = await getHistoryPageData(carId, month, true);
         setHistoryCache(carId, fresh);
@@ -355,7 +410,27 @@
         }
       } catch (err) {
         console.warn('Background refresh failed:', err);
+      } finally {
+        hideRefreshIndicator();
       }
+    }
+
+    // Subtle non-blocking indicator while fresh data loads in the background
+    function showRefreshIndicator() {
+      let el = document.getElementById('refresh-indicator');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'refresh-indicator';
+        el.className = 'refresh-indicator';
+        el.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin"></i><span>กำลังอัปเดตข้อมูล…</span>';
+        document.body.appendChild(el);
+      }
+      el.classList.add('visible');
+    }
+
+    function hideRefreshIndicator() {
+      const el = document.getElementById('refresh-indicator');
+      if (el) el.classList.remove('visible');
     }
     /**
      * Draw stacked bar chart for 6-months trends
@@ -671,20 +746,68 @@
       
       // 3. Filter change events
       document.getElementById('report-month-input').addEventListener('change', calculateAndRenderReport);
+      document.getElementById('report-fuel-month-input').addEventListener('change', calculateAndRenderReport);
       document.getElementById('report-year-select').addEventListener('change', calculateAndRenderReport);
-      
-      // 4. LINE Share button event
-      document.getElementById('btn-share-report').addEventListener('click', sendReportToLine);
+    }
+
+    /**
+     * Render the in-panel car selector pills and wire up switching.
+     */
+    function renderReportCarPills() {
+      const container = document.getElementById('report-car-pills');
+      if (!container) return;
+      container.innerHTML = CARS.map(car => `
+        <button type="button" class="report-car-pill car-id-${car.id} ${activeCar.id === car.id ? 'active' : ''}" data-car-id="${car.id}">
+          <span class="report-car-pill-dot"></span>
+          <span class="report-car-pill-name">${car.name}</span>
+          <span class="report-car-pill-plate">${car.plate}</span>
+        </button>
+      `).join('');
+      container.querySelectorAll('.report-car-pill').forEach(btn => {
+        btn.addEventListener('click', () => selectReportCar(Number(btn.getAttribute('data-car-id'))));
+      });
+    }
+
+    /**
+     * Switch the active car from inside the report panel, reload that car's
+     * data, and re-render the currently open report tab.
+     */
+    async function selectReportCar(carId) {
+      if (activeCar.id === carId) return;
+      activeCar = CARS.find(c => c.id === carId) || activeCar;
+      localStorage.setItem(activeCarStorageKey(), activeCar.id);
+
+      // Keep the header toggle and pills in sync
+      renderCarToggle(onReady);
+      renderReportCarPills();
+      document.getElementById('report-car-title').textContent = `รายงานสรุปค่าใช้จ่าย - ${activeCar.name}`;
+
+      // Feedback ที่มองเห็นได้เหนือ report panel (spinner เต็มจอปกติอยู่หลัง panel)
+      showRefreshIndicator();
+      try {
+        // Reload this car's records
+        await loadAllHistoryData();
+      } catch (err) {
+        console.warn('selectReportCar load failed:', err);
+      } finally {
+        hideRefreshIndicator();
+        // Re-render the open report ไม่ว่าโหลดจะสำเร็จหรือไม่ (ใช้ข้อมูลล่าสุดที่มี)
+        calculateAndRenderReport();
+      }
     }
     
     function openReport() {
       document.getElementById('report-car-title').textContent = `รายงานสรุปค่าใช้จ่าย - ${activeCar.name}`;
-      
+
+      // Render the in-panel car selector
+      renderReportCarPills();
+
       // Setup default month picker value to current month
       const today = new Date();
       const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
       document.getElementById('report-month-input').value = currentMonth;
-      
+      document.getElementById('report-fuel-month-input').value = currentMonth;
+
       // Setup year dropdown list dynamically based on records
       const years = new Set([today.getFullYear()]);
       fuelRecords.forEach(r => {
@@ -707,20 +830,13 @@
       yearSelect.value = today.getFullYear();
       
       // Default tab to monthly
-      activeReportTab = 'monthly';
       document.querySelectorAll('[data-report-tab]').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-report-tab') === 'monthly');
       });
-      document.getElementById('report-filter-monthly').style.display = 'flex';
-      document.getElementById('report-filter-yearly').style.display = 'none';
-      document.getElementById('report-content-monthly').style.display = 'block';
-      document.getElementById('report-content-yearly').style.display = 'none';
-      
+      switchReportTab('monthly');
+
       // Open panel
       document.getElementById('report-panel').classList.add('active');
-      
-      // Render
-      calculateAndRenderReport();
     }
     
     function closeReport() {
@@ -733,23 +849,28 @@
     
     function switchReportTab(tab) {
       activeReportTab = tab;
-      
-      if (tab === 'monthly') {
-        document.getElementById('report-filter-monthly').style.display = 'flex';
-        document.getElementById('report-filter-yearly').style.display = 'none';
-        document.getElementById('report-content-monthly').style.display = 'block';
-        document.getElementById('report-content-yearly').style.display = 'none';
-      } else {
-        document.getElementById('report-filter-monthly').style.display = 'none';
-        document.getElementById('report-filter-yearly').style.display = 'flex';
-        document.getElementById('report-content-monthly').style.display = 'none';
-        document.getElementById('report-content-yearly').style.display = 'block';
-      }
-      
+
+      const setDisp = (id, show, disp) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = show ? disp : 'none';
+      };
+
+      setDisp('report-filter-monthly', tab === 'monthly', 'flex');
+      setDisp('report-filter-fuel',    tab === 'fuel',    'flex');
+      setDisp('report-filter-yearly',  tab === 'yearly',  'flex');
+
+      setDisp('report-content-monthly', tab === 'monthly', 'block');
+      setDisp('report-content-fuel',    tab === 'fuel',    'block');
+      setDisp('report-content-yearly',  tab === 'yearly',  'block');
+
       calculateAndRenderReport();
     }
     
     function calculateAndRenderReport() {
+      if (activeReportTab === 'fuel') {
+        renderFuelSummary();
+        return;
+      }
       if (activeReportTab === 'monthly') {
         const selectedMonth = document.getElementById('report-month-input').value; // YYYY-MM
         if (!selectedMonth) return;
@@ -848,6 +969,50 @@
       }
     }
     
+    function renderFuelSummary() {
+      const selectedMonth = document.getElementById('report-fuel-month-input').value; // YYYY-MM
+      if (!selectedMonth) return;
+
+      const list = fuelRecords.filter(r => r.date && r.date.substring(0, 7) === selectedMonth);
+      const totalCost = list.reduce((s, r) => s + Number(r.total_cost || 0), 0);
+      const totalLiters = list.reduce((s, r) => s + Number(r.liters || 0), 0);
+      const count = list.length;
+      const avgPrice = totalLiters > 0 ? totalCost / totalLiters : 0;
+
+      const effVals = list.map(r => Number(r.efficiency_km_per_liter || 0)).filter(v => v > 0);
+      const avgEff = effVals.length ? effVals.reduce((s, v) => s + v, 0) / effVals.length : 0;
+
+      document.getElementById('fs-total-cost').textContent = formatCurrency(totalCost);
+      document.getElementById('fs-count').textContent = count + ' ครั้ง';
+      document.getElementById('fs-liters').textContent = totalLiters.toFixed(2) + ' ล.';
+      document.getElementById('fs-avg-price').textContent = formatCurrency(avgPrice);
+      document.getElementById('fs-avg-eff').textContent = avgEff > 0 ? avgEff.toFixed(2) : '—';
+
+      const container = document.getElementById('fs-list-container');
+      if (!list.length) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">
+            ไม่มีการเติมน้ำมันในเดือนนี้
+          </div>
+        `;
+        return;
+      }
+
+      const sorted = [...list].sort((a, b) => (a.date > b.date ? 1 : -1));
+      container.innerHTML = sorted.map(r => {
+        const eff = Number(r.efficiency_km_per_liter || 0);
+        return `
+          <div class="fs-row">
+            <div class="fs-row-left">
+              <span class="fs-row-date">${formatDate(r.date)}</span>
+              <span class="fs-row-meta">${r.fuel_type || '-'} · ${Number(r.liters || 0).toFixed(2)} ล. · ${formatCurrency(Number(r.price_per_liter || 0))}/ล.${eff > 0 ? ` · ${eff.toFixed(1)} กม./ล.` : ''}</span>
+            </div>
+            <span class="fs-row-cost">${formatCurrency(Number(r.total_cost || 0))}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderYearlyBarChart(fuelData, maintData, year) {
       const ctx = document.getElementById('yearlyReportChart').getContext('2d');
       
@@ -903,232 +1068,6 @@
           }
         }
       });
-    }
-    
-    async function sendReportToLine() {
-      if (!liff.isLoggedIn()) {
-        alert('กรุณาเปิดหน้าจอนี้ผ่านแอป LINE เพื่อส่งแชร์ข้อมูลเข้าแชท');
-        return;
-      }
-      
-      const selectedMonth = document.getElementById('report-month-input').value; // YYYY-MM
-      if (!selectedMonth) return;
-      
-      const [yearStr, monthStr] = selectedMonth.split('-');
-      const monthIndex = parseInt(monthStr) - 1;
-      const thMonthFullNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-      const thYear = parseInt(yearStr) + 543;
-      const monthLabel = `${thMonthFullNames[monthIndex]} ${thYear}`;
-      
-      const monthlyFuels = fuelRecords.filter(r => r.date && r.date.substring(0, 7) === selectedMonth);
-      const fuelSum = monthlyFuels.reduce((sum, r) => sum + Number(r.total_cost || 0), 0);
-      const monthlyMaints = maintenanceRecords.filter(r => r.date && r.date.substring(0, 7) === selectedMonth);
-      const maintSum = monthlyMaints.reduce((sum, r) => sum + Number(r.total_cost || 0), 0);
-      const totalSum = fuelSum + maintSum;
-      
-      const aggregatedItems = {};
-      monthlyMaints.forEach(r => {
-        if (r.items && r.items.length > 0) {
-          r.items.forEach(item => {
-            aggregatedItems[item.service_name] = (aggregatedItems[item.service_name] || 0) + Number(item.cost || 0);
-          });
-        }
-      });
-      const breakdownArray = Object.keys(aggregatedItems).map(name => ({
-        name: name,
-        cost: aggregatedItems[name]
-      })).sort((a, b) => b.cost - a.cost).slice(0, 3);
-      
-      const flexPayload = {
-        type: "flex",
-        altText: `รายงานค่าใช้จ่ายประจำเดือน ${monthLabel} (${activeCar.name})`,
-        contents: {
-          type: "bubble",
-          size: "mega",
-          styles: {
-            header: { backgroundColor: "#14142b" },
-            body: { backgroundColor: "#0d0d16" },
-            footer: { backgroundColor: "#14142b" }
-          },
-          header: {
-            type: "box",
-            layout: "vertical",
-            contents: [
-              {
-                type: "text",
-                text: "🚗 Monthly Expense Report",
-                weight: "bold",
-                color: "#00c9b1",
-                size: "sm"
-              },
-              {
-                type: "text",
-                text: activeCar.name,
-                weight: "bold",
-                color: "#ffffff",
-                size: "xl",
-                margin: "xs"
-              },
-              {
-                type: "text",
-                text: `ประจำเดือน: ${monthLabel}`,
-                color: "#a0a0c0",
-                size: "xs",
-                margin: "xs"
-              }
-            ]
-          },
-          body: {
-            type: "box",
-            layout: "vertical",
-            contents: [
-              {
-                type: "box",
-                layout: "horizontal",
-                contents: [
-                  {
-                    type: "text",
-                    text: "ยอดรวมทั้งหมด",
-                    color: "#a0a0c0",
-                    size: "sm"
-                  },
-                  {
-                    type: "text",
-                    text: `฿${totalSum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
-                    weight: "bold",
-                    color: "#00c9b1",
-                    align: "end",
-                    size: "md"
-                  }
-                ]
-              },
-              {
-                type: "separator",
-                margin: "md",
-                color: "#FFFFFF1A"
-              },
-              {
-                type: "box",
-                layout: "vertical",
-                margin: "md",
-                spacing: "sm",
-                contents: [
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "⛽ ค่าน้ำมันรวม",
-                        color: "#a0a0c0",
-                        size: "sm"
-                      },
-                      {
-                        type: "text",
-                        text: `฿${fuelSum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
-                        color: "#f5c518",
-                        align: "end",
-                        size: "sm"
-                      }
-                    ]
-                  },
-                  {
-                    type: "box",
-                    layout: "horizontal",
-                    contents: [
-                      {
-                        type: "text",
-                        text: "🔧 ค่าซ่อมบำรุงรวม",
-                        color: "#a0a0c0",
-                        size: "sm"
-                      },
-                      {
-                        type: "text",
-                        text: `฿${maintSum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
-                        color: "#4a90d9",
-                        align: "end",
-                        size: "sm"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      };
-      
-      if (breakdownArray.length > 0) {
-        flexPayload.contents.body.contents.push(
-          {
-            type: "separator",
-            margin: "md",
-            color: "#FFFFFF1A"
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            margin: "md",
-            contents: [
-              {
-                type: "text",
-                text: "📋 รายการซ่อมบำรุงหลัก:",
-                color: "#ffffff",
-                size: "sm",
-                weight: "bold",
-                margin: "xs"
-              },
-              ...breakdownArray.map(item => ({
-                type: "box",
-                layout: "horizontal",
-                margin: "xs",
-                contents: [
-                  {
-                    type: "text",
-                    text: `• ${item.name}`,
-                    color: "#a0a0c0",
-                    size: "xs",
-                    flex: 3
-                  },
-                  {
-                    type: "text",
-                    text: `฿${item.cost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
-                    color: "#ffffff",
-                    align: "end",
-                    size: "xs",
-                    flex: 2
-                  }
-                ]
-              }))
-            ]
-          }
-        );
-      }
-      
-      flexPayload.contents.footer = {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: `แชร์โดย: ${currentUser.displayName}`,
-            size: "xxs",
-            color: "#6b6b83",
-            align: "center"
-          }
-        ]
-      };
-      
-      showLoading('กำลังส่งข้อความ...');
-      try {
-        await liff.sendMessages([flexPayload]);
-        closeReport();
-      } catch (err) {
-        console.error('Failed to send Flex Message:', err);
-        alert('การส่งข้อความล้มเหลว: ' + err.message);
-      } finally {
-        hideLoading();
-      }
     }
   </script>
   <script>

@@ -1,5 +1,5 @@
 /**
- * CAR TRACKER - SHARED APP UTILITIES & LINE LIFF CONFIG
+ * CAR TRACKER - SHARED APP UTILITIES & PROFILE CONFIG
  */
 
 // 1. CAR CONFIGURATION
@@ -8,79 +8,157 @@ const CARS = [
   { id: 2, name: 'Honda Jazz', year: 2014, color: 'เหลือง', plate: '3กส 7666' }
 ];
 
-// 2. LIFF APP IDs (Replace these with your actual LIFF IDs once created in LINE Developer Console)
-const LIFF_IDS = {
-  fuel: '2010486446-X0yj8FUH',             
-  maintenance: '2010486446-vdtoyrHt', 
-  history: '2010486446-QZGGJYTL'
-};
+// 2. PROFILE CONFIGURATION (ผู้ใช้งานในครอบครัว — เลือกครั้งเดียว จำไว้ในเครื่อง)
+const PROFILES = [
+  { id: 'liang', name: 'Liang', img: 'Files/M.png' },
+  { id: 'koy',   name: 'Koy',   img: 'Files/FM.png' }
+];
+
+const PROFILE_STORAGE_KEY = 'car_tracker_profile';
+
+/**
+ * คืน markup รูปโปรไฟล์ (วางในวงกลมพื้นอ่อนที่กำหนดใน CSS)
+ */
+function profileAvatarHTML(profile) {
+  return `<img src="${profile.img}" alt="${profile.name}">`;
+}
 
 // 3. GLOBAL STATE
 let activeCar = null;
+let currentProfile = null;
 let currentUser = {
-  displayName: 'ผู้ใช้งาน',
-  pictureUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
+  displayName: 'ผู้ใช้งาน'
 };
+
+/**
+ * Per-profile localStorage key for the last-used car
+ */
+function activeCarStorageKey() {
+  const pid = currentProfile ? currentProfile.id : 'default';
+  return 'car_tracker_active_car_' + pid;
+}
+
+/**
+ * Apply a profile to global state
+ */
+function applyProfile(profileId) {
+  currentProfile = PROFILES.find(p => p.id === profileId) || PROFILES[0];
+  currentUser = { displayName: currentProfile.name };
+}
+
+/**
+ * Ensure a profile is selected. If none stored, show the picker and block
+ * until the user chooses. Calls callback once a profile is active.
+ */
+function ensureProfile(callback) {
+  const storedId = localStorage.getItem(PROFILE_STORAGE_KEY);
+  if (storedId && PROFILES.find(p => p.id === storedId)) {
+    applyProfile(storedId);
+    if (typeof callback === 'function') callback();
+  } else {
+    renderProfilePicker((pickedId) => {
+      localStorage.setItem(PROFILE_STORAGE_KEY, pickedId);
+      applyProfile(pickedId);
+      if (typeof callback === 'function') callback();
+    }, false);
+  }
+}
+
+/**
+ * Switch profile: show the picker (cancellable). On pick, reload so all
+ * data reflects the new person's last-used car.
+ */
+function switchProfile() {
+  renderProfilePicker((pickedId) => {
+    localStorage.setItem(PROFILE_STORAGE_KEY, pickedId);
+    location.reload();
+  }, true);
+}
+
+/**
+ * Render the full-screen "who is using this?" profile picker overlay
+ * @param {function} onPick - called with the chosen profile id
+ * @param {boolean} allowCancel - show a cancel button (for switching)
+ */
+function renderProfilePicker(onPick, allowCancel) {
+  const existing = document.getElementById('profile-picker');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'profile-picker';
+  overlay.className = 'profile-picker-overlay';
+  overlay.innerHTML = `
+    <div class="profile-picker-inner">
+      <div class="profile-picker-heading">
+        <div class="profile-picker-logo">🚗</div>
+        <div class="profile-picker-title">ใครกำลังใช้งาน?</div>
+      </div>
+      <div class="profile-picker-grid">
+        ${PROFILES.map(p => `
+          <button type="button" class="profile-card" data-id="${p.id}">
+            <span class="profile-card-avatar">${profileAvatarHTML(p)}</span>
+            <span class="profile-card-name">${p.name}</span>
+          </button>
+        `).join('')}
+      </div>
+      ${allowCancel ? '<button type="button" class="profile-picker-cancel" id="profile-picker-cancel">ยกเลิก</button>' : ''}
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  overlay.querySelectorAll('.profile-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      overlay.remove();
+      if (typeof onPick === 'function') onPick(id);
+    });
+  });
+
+  if (allowCancel) {
+    overlay.querySelector('#profile-picker-cancel').addEventListener('click', () => overlay.remove());
+  }
+}
 
 /**
  * Initialize App Core
  * @param {string} pageType - 'fuel', 'maintenance', or 'history'
- * @param {function} onReadyCallback - Called when LIFF and car toggle are ready
+ * @param {function} onReadyCallback - Called when profile and car toggle are ready
  */
-async function initApp(pageType, onReadyCallback) {
+function initApp(pageType, onReadyCallback) {
   // Set up theme class on body
   document.body.classList.add(`theme-${pageType}`);
-  
+
   // Set up Loading State handlers
   setupLoadingElements();
-  
-  // Initialize Active Car
-  initActiveCar();
-  
-  // Render Car Toggle Switch in Header
-  renderCarToggle(onReadyCallback);
-  
-  // Initialize LINE LIFF
-  try {
-    const liffId = LIFF_IDS[pageType] || '';
-    if (liffId && liffId !== 'YOUR_LIFF_ID_FOR_FUEL' && liffId !== 'YOUR_LIFF_ID_FOR_MAINTENANCE' && liffId !== 'YOUR_LIFF_ID_FOR_HISTORY') {
-      await liff.init({ liffId: liffId });
-      if (liff.isLoggedIn()) {
-        const profile = await liff.getProfile();
-        currentUser = {
-          displayName: profile.displayName,
-          pictureUrl: profile.pictureUrl || currentUser.pictureUrl
-        };
-      } else {
-        // In local development or outside LINE, LIFF may not login automatically
-        console.log('LIFF initialized but user is not logged in.');
-      }
-    } else {
-      console.warn('Running in Mock/Development mode: LIFF ID not configured.');
+
+  // Ensure a profile is selected (shows picker on first launch), then init
+  ensureProfile(() => {
+    // Initialize Active Car (per-profile last-used car)
+    initActiveCar();
+
+    // Render Car Toggle Switch in Header
+    renderCarToggle(onReadyCallback);
+
+    // Render User Profile Badge in header if element exists
+    renderUserBadge();
+
+    // Call page specific initialization
+    if (typeof onReadyCallback === 'function') {
+      onReadyCallback();
     }
-  } catch (error) {
-    console.error('LIFF Initialization failed:', error);
-  }
-  
-  // Render User Profile Badge in header if element exists
-  renderUserBadge();
-  
-  // Call page specific initialization
-  if (typeof onReadyCallback === 'function') {
-    onReadyCallback();
-  }
+  });
 }
 
 /**
  * Handle Active Car State (load from localStorage)
  */
 function initActiveCar() {
-  const savedCarId = localStorage.getItem('car_tracker_active_car');
+  const savedCarId = localStorage.getItem(activeCarStorageKey());
   if (savedCarId) {
     activeCar = CARS.find(car => car.id === Number(savedCarId)) || CARS[0];
   } else {
     activeCar = CARS[0];
-    localStorage.setItem('car_tracker_active_car', activeCar.id);
+    localStorage.setItem(activeCarStorageKey(), activeCar.id);
   }
 }
 
@@ -108,9 +186,9 @@ function renderCarToggle(onReadyCallback) {
       container.querySelectorAll('.car-toggle-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       
-      // Update State & LocalStorage
+      // Update State & LocalStorage (per-profile last-used car)
       activeCar = CARS.find(car => car.id === carId);
-      localStorage.setItem('car_tracker_active_car', activeCar.id);
+      localStorage.setItem(activeCarStorageKey(), activeCar.id);
       
       // Trigger callback if defined (e.g. reload charts/lists on active car change)
       if (typeof onReadyCallback === 'function') {
@@ -125,12 +203,16 @@ function renderCarToggle(onReadyCallback) {
  */
 function renderUserBadge() {
   const container = document.querySelector('.user-badge');
-  if (!container) return;
-  
+  if (!container || !currentProfile) return;
+
+  container.classList.add('user-badge-clickable');
   container.innerHTML = `
-    <img src="${currentUser.pictureUrl}" alt="${currentUser.displayName}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png'">
-    <span>${currentUser.displayName}</span>
+    <span class="user-badge-avatar">${profileAvatarHTML(currentProfile)}</span>
+    <span>${currentProfile.name}</span>
+    <i class="fa-solid fa-angle-down user-badge-caret"></i>
   `;
+  container.setAttribute('title', 'แตะเพื่อสลับผู้ใช้');
+  container.onclick = switchProfile;
 }
 
 // ==========================================

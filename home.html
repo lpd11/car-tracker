@@ -1,347 +1,267 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d16">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Car Tracker">
   <title>Car Tracker</title>
   <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* ── Home-specific overrides ── */
+    /* ── Home-specific (mobile-first) ── */
     body {
       display: flex;
       flex-direction: column;
       min-height: 100vh;
+      min-height: 100dvh;
       padding-bottom: 0;
     }
 
-    /* Hero */
-    .hero {
-      text-align: center;
-      padding: 48px 24px 24px;
-    }
-
-    .hero-icon {
-      width: 72px;
-      height: 72px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, #1a1a3e 0%, #0d0d22 100%);
-      border: 1px solid rgba(245, 197, 24, 0.25);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      margin-bottom: 16px;
-      box-shadow: 0 8px 32px rgba(245, 197, 24, 0.12);
-    }
-
-    .hero-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #ffffff 0%, #a0a0c0 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 6px;
-    }
-
-    .hero-subtitle {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-
-    /* Car Selector */
-    .car-selector {
-      max-width: 420px;
-      margin: 0 auto 32px;
-      padding: 0 16px;
-    }
-
-    .car-selector-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-    .car-pills {
-      display: flex;
-      gap: 10px;
-    }
-
-    .car-pill {
+    .home-wrap {
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+      padding: 0 18px;
       flex: 1;
       display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar: greeting + profile switch */
+    .home-top {
+      display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
+      gap: 12px;
+      padding: calc(env(safe-area-inset-top, 0px) + 28px) 0 8px;
+    }
+
+    .greeting-hi {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .greeting-name {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+      color: var(--text-primary);
+    }
+
+    .greeting-name .wave { -webkit-text-fill-color: initial; }
+
+    /* Profile chip (tap to switch) */
+    .profile-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       background: var(--bg-card);
-      border: 1.5px solid rgba(255,255,255,0.07);
-      border-radius: 14px;
-      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 999px;
+      padding: 5px 12px 5px 5px;
       cursor: pointer;
+      flex-shrink: 0;
       transition: var(--transition);
-      text-align: left;
     }
+    .profile-chip:active { transform: scale(0.96); }
 
-    .car-pill.active-car-1 {
-      border-color: rgba(255, 123, 0, 0.5);
-      background: rgba(255, 123, 0, 0.07);
-      box-shadow: 0 4px 20px rgba(255, 123, 0, 0.15);
-    }
-
-    .car-pill.active-car-2 {
-      border-color: rgba(255, 208, 0, 0.5);
-      background: rgba(255, 208, 0, 0.07);
-      box-shadow: 0 4px 20px rgba(255, 208, 0, 0.15);
-    }
-
-    .car-pill-dot {
-      width: 10px;
-      height: 10px;
+    .profile-chip-avatar {
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
+      background: #eceef3;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       flex-shrink: 0;
     }
+    .profile-chip-avatar svg,
+    .profile-chip-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .profile-chip-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1.1; }
+    .profile-chip-name  { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+    .profile-chip-caret { font-size: 0.7rem; color: var(--text-muted); margin-left: 2px; }
 
-    .car-pill.active-car-1 .car-pill-dot { background: #ff7b00; }
-    .car-pill.active-car-2 .car-pill-dot { background: #ffd000; }
-    .car-pill:not(.active-car-1):not(.active-car-2) .car-pill-dot { background: var(--text-muted); }
-
-    .car-pill-info { flex: 1; }
-    .car-pill-name { font-size: 0.85rem; font-weight: 600; line-height: 1.2; }
-    .car-pill-plate { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
-
-    .car-pill-check {
-      font-size: 0.85rem;
-      opacity: 0;
-      transition: var(--transition);
+    /* Hero logo strip */
+    .home-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 26px 0 18px;
     }
-    .car-pill.active-car-1 .car-pill-check { opacity: 1; color: #ff7b00; }
-    .car-pill.active-car-2 .car-pill-check { opacity: 1; color: #ffd000; }
+    .home-brand-icon {
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1a1a3e 0%, #0d0d22 100%);
+      border: 1px solid rgba(245, 197, 24, 0.25);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 8px 24px rgba(245, 197, 24, 0.12);
+    }
+    .home-brand-title { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; }
+    .home-brand-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
 
-    /* Nav Grid */
-    .nav-grid {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 0 16px 48px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+    /* Menu list — big tap targets, horizontal rows */
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .menu-card {
+      display: flex;
+      align-items: center;
       gap: 16px;
-    }
-
-    @media (max-width: 640px) {
-      .nav-grid { grid-template-columns: 1fr; max-width: 420px; }
-    }
-
-    .nav-card {
-      display: block;
       text-decoration: none;
       color: inherit;
       background: var(--bg-card);
-      border-radius: 20px;
-      padding: 28px 24px;
       border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 18px;
+      padding: 18px;
       box-shadow: var(--shadow);
       transition: var(--transition);
       position: relative;
       overflow: hidden;
     }
-
-    .nav-card::before {
+    .menu-card::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      border-radius: 20px 20px 0 0;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
     }
+    .menu-card.fuel::before    { background: var(--color-gold-gradient); }
+    .menu-card.maint::before   { background: var(--color-blue-gradient); }
+    .menu-card.history::before { background: var(--color-teal-gradient); }
+    .menu-card:active { transform: scale(0.98); border-color: rgba(255,255,255,0.12); }
 
-    .nav-card.fuel::before   { background: var(--color-gold-gradient); }
-    .nav-card.maint::before  { background: var(--color-blue-gradient); }
-    .nav-card.history::before { background: var(--color-teal-gradient); }
-
-    .nav-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(255,255,255,0.12);
-    }
-
-    .nav-card.fuel:hover   { box-shadow: 0 16px 40px rgba(245, 197, 24, 0.15); }
-    .nav-card.maint:hover  { box-shadow: 0 16px 40px rgba(74, 144, 217, 0.15); }
-    .nav-card.history:hover { box-shadow: 0 16px 40px rgba(0, 201, 177, 0.15); }
-
-    .nav-card-icon {
-      width: 52px;
-      height: 52px;
+    .menu-card-icon {
+      width: 52px; height: 52px;
       border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 1.4rem;
-      margin-bottom: 18px;
+      flex-shrink: 0;
     }
+    .menu-card.fuel    .menu-card-icon { background: rgba(245,197,24,0.12); color: var(--color-gold); }
+    .menu-card.maint   .menu-card-icon { background: rgba(74,144,217,0.12); color: var(--color-blue); }
+    .menu-card.history .menu-card-icon { background: rgba(0,201,177,0.12); color: var(--color-teal); }
 
-    .nav-card.fuel   .nav-card-icon { background: rgba(245,197,24,0.12); color: var(--color-gold); }
-    .nav-card.maint  .nav-card-icon { background: rgba(74,144,217,0.12); color: var(--color-blue); }
-    .nav-card.history .nav-card-icon { background: rgba(0,201,177,0.12); color: var(--color-teal); }
-
-    .nav-card-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .nav-card-desc {
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      margin-bottom: 20px;
-    }
-
-    .nav-card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .nav-card-tag {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 20px;
-      letter-spacing: 0.3px;
-    }
-
-    .nav-card.fuel   .nav-card-tag { background: rgba(245,197,24,0.12); color: var(--color-gold); }
-    .nav-card.maint  .nav-card-tag { background: rgba(74,144,217,0.12); color: var(--color-blue); }
-    .nav-card.history .nav-card-tag { background: rgba(0,201,177,0.12); color: var(--color-teal); }
-
-    .nav-card-arrow {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      transition: var(--transition);
-    }
-
-    .nav-card:hover .nav-card-arrow { transform: translateX(4px); color: var(--text-secondary); }
+    .menu-card-body { flex: 1; min-width: 0; }
+    .menu-card-title { font-size: 1.02rem; font-weight: 700; margin-bottom: 3px; }
+    .menu-card-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+    .menu-card-arrow { color: var(--text-muted); font-size: 0.9rem; flex-shrink: 0; }
 
     /* Footer */
     .home-footer {
       margin-top: auto;
       text-align: center;
-      padding: 16px;
-      font-size: 0.72rem;
+      padding: 24px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+      font-size: 0.7rem;
       color: var(--text-muted);
-      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    /* Wider screens: keep it comfortably centered, cards a touch taller */
+    @media (min-width: 620px) {
+      .greeting-name { font-size: 1.9rem; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Hero -->
-  <div class="hero">
-    <div class="hero-icon">🚗</div>
-    <div class="hero-title">Car Tracker</div>
-    <div class="hero-subtitle">ติดตามค่าใช้จ่ายรถยนต์ในครอบครัว</div>
-  </div>
+  <div class="home-wrap">
 
-  <!-- Car Selector -->
-  <div class="car-selector">
-    <div class="car-selector-label">เลือกรถที่ใช้งาน</div>
-    <div class="car-pills">
-      <div class="car-pill" id="pill-1" onclick="selectCar(1)">
-        <div class="car-pill-dot"></div>
-        <div class="car-pill-info">
-          <div class="car-pill-name">Nissan Almera</div>
-          <div class="car-pill-plate">9กข 70 · 2020 · ส้ม</div>
-        </div>
-        <i class="fa-solid fa-circle-check car-pill-check"></i>
+    <!-- Top: greeting + profile switch -->
+    <div class="home-top">
+      <div>
+        <div class="greeting-hi">สวัสดี <span class="wave">👋</span></div>
+        <div class="greeting-name" id="greeting-name">—</div>
       </div>
-      <div class="car-pill" id="pill-2" onclick="selectCar(2)">
-        <div class="car-pill-dot"></div>
-        <div class="car-pill-info">
-          <div class="car-pill-name">Honda Jazz</div>
-          <div class="car-pill-plate">3กส 7666 · 2014 · เหลือง</div>
+      <div class="profile-chip" id="profile-chip" onclick="switchProfile()">
+        <span class="profile-chip-avatar" id="chip-avatar"></span>
+        <div>
+          <div class="profile-chip-label">ผู้ใช้งาน</div>
+          <div class="profile-chip-name" id="chip-name">—</div>
         </div>
-        <i class="fa-solid fa-circle-check car-pill-check"></i>
+        <i class="fa-solid fa-angle-down profile-chip-caret"></i>
       </div>
     </div>
+
+    <!-- Brand strip -->
+    <div class="home-brand">
+      <div class="home-brand-icon">🚗</div>
+      <div>
+        <div class="home-brand-title">Car Tracker</div>
+        <div class="home-brand-sub">ค่าใช้จ่ายรถยนต์ในครอบครัว</div>
+      </div>
+    </div>
+
+    <!-- Menu -->
+    <div class="menu-list">
+
+      <a class="menu-card fuel" href="fuel.html">
+        <div class="menu-card-icon"><i class="fa-solid fa-gas-pump"></i></div>
+        <div class="menu-card-body">
+          <div class="menu-card-title">เติมน้ำมัน</div>
+          <div class="menu-card-desc">บันทึกการเติม คำนวณ กม./ลิตร อัตโนมัติ</div>
+        </div>
+        <i class="fa-solid fa-chevron-right menu-card-arrow"></i>
+      </a>
+
+      <a class="menu-card maint" href="maintenance.html">
+        <div class="menu-card-icon"><i class="fa-solid fa-wrench"></i></div>
+        <div class="menu-card-body">
+          <div class="menu-card-title">ซ่อมบำรุง</div>
+          <div class="menu-card-desc">บันทึกการซ่อม/เปลี่ยนอะไหล่ หลายรายการต่อครั้ง</div>
+        </div>
+        <i class="fa-solid fa-chevron-right menu-card-arrow"></i>
+      </a>
+
+      <a class="menu-card history" href="history.html">
+        <div class="menu-card-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <div class="menu-card-body">
+          <div class="menu-card-title">ประวัติ &amp; รายงาน</div>
+          <div class="menu-card-desc">สรุปรายเดือน กราฟย้อนหลัง 6 เดือน และค้นหา</div>
+        </div>
+        <i class="fa-solid fa-chevron-right menu-card-arrow"></i>
+      </a>
+
+    </div>
+
+    <div class="home-footer">
+      Nissan Almera &amp; Honda Jazz · Powered by Google Sheets
+    </div>
+
   </div>
 
-  <!-- Nav Cards -->
-  <div class="nav-grid">
-
-    <a class="nav-card fuel" id="link-fuel" href="fuel.html">
-      <div class="nav-card-icon">
-        <i class="fa-solid fa-gas-pump"></i>
-      </div>
-      <div class="nav-card-title">เติมน้ำมัน</div>
-      <div class="nav-card-desc">บันทึกการเติมน้ำมันแต่ละครั้ง คำนวณอัตราสิ้นเปลือง (กม./ลิตร) อัตโนมัติ</div>
-      <div class="nav-card-footer">
-        <span class="nav-card-tag">fuel.html</span>
-        <i class="fa-solid fa-arrow-right nav-card-arrow"></i>
-      </div>
-    </a>
-
-    <a class="nav-card maint" id="link-maint" href="maintenance.html">
-      <div class="nav-card-icon">
-        <i class="fa-solid fa-wrench"></i>
-      </div>
-      <div class="nav-card-title">ซ่อมบำรุง</div>
-      <div class="nav-card-desc">บันทึกการซ่อมและเปลี่ยนอะไหล่ รองรับหลายรายการต่อครั้ง</div>
-      <div class="nav-card-footer">
-        <span class="nav-card-tag">maintenance.html</span>
-        <i class="fa-solid fa-arrow-right nav-card-arrow"></i>
-      </div>
-    </a>
-
-    <a class="nav-card history" id="link-history" href="history.html">
-      <div class="nav-card-icon">
-        <i class="fa-solid fa-clock-rotate-left"></i>
-      </div>
-      <div class="nav-card-title">ประวัติ & รายงาน</div>
-      <div class="nav-card-desc">ดูประวัติทั้งหมด สรุปรายเดือน กราฟย้อนหลัง 6 เดือน และส่งรายงานเข้า LINE</div>
-      <div class="nav-card-footer">
-        <span class="nav-card-tag">history.html</span>
-        <i class="fa-solid fa-arrow-right nav-card-arrow"></i>
-      </div>
-    </a>
-
-  </div>
-
-  <!-- Footer -->
-  <div class="home-footer">
-    Car Tracker · Nissan Almera & Honda Jazz · Powered by Google Sheets
-  </div>
-
+  <script src="js/app.js"></script>
   <script>
-    const CARS = [
-      { id: 1, name: 'Nissan Almera' },
-      { id: 2, name: 'Honda Jazz' }
-    ];
+    // On first launch this shows the profile picker; afterwards it just
+    // greets the remembered person (with a tap-to-switch chip).
+    window.addEventListener('load', () => {
+      ensureProfile(renderHomeGreeting);
+    });
 
-    function selectCar(id) {
-      localStorage.setItem('car_tracker_active_car', id);
-      renderPills(id);
+    function renderHomeGreeting() {
+      document.getElementById('greeting-name').textContent = currentProfile.name;
+      document.getElementById('chip-name').textContent = currentProfile.name;
+
+      const avatar = document.getElementById('chip-avatar');
+      avatar.innerHTML = profileAvatarHTML(currentProfile);
     }
-
-    function renderPills(activeCar) {
-      CARS.forEach(car => {
-        const pill = document.getElementById('pill-' + car.id);
-        pill.className = 'car-pill' + (car.id === activeCar ? ' active-car-' + car.id : '');
-      });
-    }
-
-    // Init: read saved car from localStorage
-    const saved = parseInt(localStorage.getItem('car_tracker_active_car')) || 1;
-    renderPills(saved);
   </script>
 
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/car-tracker/sw.js');
     }
-  </script></body>
+  </script>
+</body>
 </html>
