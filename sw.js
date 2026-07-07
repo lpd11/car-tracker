@@ -1,4 +1,4 @@
-const CACHE = 'car-tracker-v6';
+const CACHE = 'car-tracker-v7';
 const ASSETS = [
   '/car-tracker/',
   '/car-tracker/home.html',

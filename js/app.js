@@ -38,6 +38,31 @@ function activeCarStorageKey() {
   return 'car_tracker_active_car_' + pid;
 }
 
+// 4. DEFAULT LANDING PAGE (ต่อโปรไฟล์ — เลือกได้ว่าเปิดแอปแล้วเข้าหน้าไหนก่อน)
+const DEFAULT_PAGE_OPTIONS = ['fuel.html', 'maintenance.html', 'history.html'];
+
+function defaultPageStorageKey() {
+  const pid = currentProfile ? currentProfile.id : 'default';
+  return 'car_tracker_default_page_' + pid;
+}
+
+/**
+ * หน้าแรกที่ตั้งไว้ของโปรไฟล์ปัจจุบัน — null ถ้ายังไม่ตั้ง (ใช้หน้าเมนู home.html ตามปกติ)
+ */
+function getDefaultPage() {
+  const page = localStorage.getItem(defaultPageStorageKey());
+  return DEFAULT_PAGE_OPTIONS.includes(page) ? page : null;
+}
+
+function setDefaultPage(page) {
+  const key = defaultPageStorageKey();
+  if (page && DEFAULT_PAGE_OPTIONS.includes(page)) {
+    localStorage.setItem(key, page);
+  } else {
+    localStorage.removeItem(key);
+  }
+}
+
 /**
  * Apply a profile to global state
  */
