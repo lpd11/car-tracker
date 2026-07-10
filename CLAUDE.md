@@ -21,7 +21,7 @@
 | Database | Google Sheets (5 sheets) |
 | Platform | PWA (installable web app) — ไม่มี LINE LIFF แล้ว |
 | Auth | Profile switcher ในเครื่อง (Liang / Koy) เก็บใน localStorage — ไม่มี login จริง |
-| Hosting | GitHub Pages (`https://eliang1111.github.io/car-tracker/`) |
+| Hosting | GitHub Pages (`https://lpd11.github.io/car-tracker/`) |
 | Deploy tool | clasp (scriptId: `1MDVQFzjLE068BxzGoYrINAWlzsXBkTl6BLd_5NfxbADR8pJuMQzfdn09`) |
 
 ---
