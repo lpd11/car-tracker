@@ -403,6 +403,7 @@
       showLoading('กำลังลบข้อมูล...');
       try {
         await deleteRecord('fuel', editId);
+        invalidateHistoryCache(activeCar.id);
         window.location.href = 'history.html';
       } catch (err) {
         console.error(err);
