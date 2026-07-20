@@ -294,6 +294,23 @@
 
     <!-- YEARLY REPORT CONTENT -->
     <div id="report-content-yearly" style="display: none;">
+      <div class="report-cards-grid">
+        <div class="report-card total">
+          <div class="report-card-val" id="report-year-total-cost">฿0.00</div>
+          <div class="report-card-lbl">ค่าใช้จ่ายรวมทั้งปี</div>
+        </div>
+        <div class="report-cards-row">
+          <div class="report-card fuel">
+            <div class="report-card-val" id="report-year-fuel-cost">฿0.00</div>
+            <div class="report-card-lbl">ค่าน้ำมันรวม</div>
+          </div>
+          <div class="report-card maint">
+            <div class="report-card-val" id="report-year-maint-cost">฿0.00</div>
+            <div class="report-card-lbl">ค่าซ่อมบำรุงรวม</div>
+          </div>
+        </div>
+      </div>
+
       <div class="report-section-title">
         <i class="fa-solid fa-chart-column" style="color: var(--color-teal); margin-right: 6px;"></i>
         <span>กราฟสรุปค่าใช้จ่ายแยกประเภทรายเดือน</span>
@@ -964,6 +981,13 @@
           }
         });
         
+        // Summary cards: ยอดรวมทั้งปี (รวมจากที่แยกรายเดือนไว้แล้ว)
+        const yearFuelTotal  = fuelMonths.reduce((s, v) => s + v, 0);
+        const yearMaintTotal = maintMonths.reduce((s, v) => s + v, 0);
+        document.getElementById('report-year-fuel-cost').textContent  = formatCurrency(yearFuelTotal);
+        document.getElementById('report-year-maint-cost').textContent = formatCurrency(yearMaintTotal);
+        document.getElementById('report-year-total-cost').textContent = formatCurrency(yearFuelTotal + yearMaintTotal);
+
         // Render 12-month Bar Chart
         renderYearlyBarChart(fuelMonths, maintMonths, selectedYear);
       }
