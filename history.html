@@ -200,7 +200,6 @@
     <!-- Tab Controls -->
     <div class="report-tabs">
       <button type="button" class="report-tab active" data-report-tab="monthly">รายเดือน</button>
-      <button type="button" class="report-tab" data-report-tab="fuel">สรุปน้ำมัน</button>
       <button type="button" class="report-tab" data-report-tab="yearly">รายปี</button>
     </div>
 
@@ -208,12 +207,6 @@
     <div class="report-filter" id="report-filter-monthly">
       <label>ประจำเดือน:</label>
       <input type="month" id="report-month-input" class="report-input-month">
-    </div>
-
-    <!-- Filter Section (Fuel Summary) -->
-    <div class="report-filter" id="report-filter-fuel" style="display: none;">
-      <label>ประจำเดือน:</label>
-      <input type="month" id="report-fuel-month-input" class="report-input-month">
     </div>
 
     <!-- Filter Section (Yearly) -->
@@ -244,23 +237,12 @@
         </div>
       </div>
       
-      <!-- Breakdown List -->
+      <!-- Fuel detail (ยุบรวมจากแท็บ "สรุปน้ำมัน" เดิม ใช้ตัวเลือกเดือนร่วมกันด้านบน) -->
       <div class="report-section-title">
-        <i class="fa-solid fa-list-check" style="color: var(--color-blue); margin-right: 6px;"></i>
-        <span>สัดส่วนค่าใช้จ่ายซ่อมบำรุง</span>
+        <i class="fa-solid fa-gas-pump" style="color: var(--color-gold); margin-right: 6px;"></i>
+        <span>รายละเอียดน้ำมัน</span>
       </div>
-      <div class="report-breakdown-list" id="report-breakdown-container">
-        <!-- Progress rows dynamically populated -->
-      </div>
-    </div>
-
-    <!-- FUEL SUMMARY CONTENT -->
-    <div id="report-content-fuel" style="display: none;">
       <div class="report-cards-grid">
-        <div class="report-card fuel">
-          <div class="report-card-val" id="fs-total-cost">฿0.00</div>
-          <div class="report-card-lbl">ค่าน้ำมันรวมเดือนนี้</div>
-        </div>
         <div class="report-cards-row">
           <div class="report-card">
             <div class="report-card-val" id="fs-count">0</div>
@@ -282,13 +264,17 @@
           </div>
         </div>
       </div>
-
-      <div class="report-section-title">
-        <i class="fa-solid fa-gas-pump" style="color: var(--color-gold); margin-right: 6px;"></i>
-        <span>รายการเติมน้ำมันในเดือนนี้</span>
-      </div>
       <div class="report-breakdown-list" id="fs-list-container">
         <!-- Fuel rows dynamically populated -->
+      </div>
+
+      <!-- Breakdown List -->
+      <div class="report-section-title">
+        <i class="fa-solid fa-list-check" style="color: var(--color-blue); margin-right: 6px;"></i>
+        <span>สัดส่วนค่าใช้จ่ายซ่อมบำรุง</span>
+      </div>
+      <div class="report-breakdown-list" id="report-breakdown-container">
+        <!-- Progress rows dynamically populated -->
       </div>
     </div>
 
@@ -763,7 +749,6 @@
       
       // 3. Filter change events
       document.getElementById('report-month-input').addEventListener('change', calculateAndRenderReport);
-      document.getElementById('report-fuel-month-input').addEventListener('change', calculateAndRenderReport);
       document.getElementById('report-year-select').addEventListener('change', calculateAndRenderReport);
     }
 
@@ -823,7 +808,6 @@
       const today = new Date();
       const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
       document.getElementById('report-month-input').value = currentMonth;
-      document.getElementById('report-fuel-month-input').value = currentMonth;
 
       // Setup year dropdown list dynamically based on records
       const years = new Set([today.getFullYear()]);
@@ -873,22 +857,19 @@
       };
 
       setDisp('report-filter-monthly', tab === 'monthly', 'flex');
-      setDisp('report-filter-fuel',    tab === 'fuel',    'flex');
       setDisp('report-filter-yearly',  tab === 'yearly',  'flex');
 
       setDisp('report-content-monthly', tab === 'monthly', 'block');
-      setDisp('report-content-fuel',    tab === 'fuel',    'block');
       setDisp('report-content-yearly',  tab === 'yearly',  'block');
 
       calculateAndRenderReport();
     }
     
     function calculateAndRenderReport() {
-      if (activeReportTab === 'fuel') {
-        renderFuelSummary();
-        return;
-      }
       if (activeReportTab === 'monthly') {
+        // รายละเอียดน้ำมันอยู่ในแท็บเดียวกันแล้ว ใช้เดือนเดียวกับการ์ดสรุปด้านบน
+        renderFuelSummary();
+
         const selectedMonth = document.getElementById('report-month-input').value; // YYYY-MM
         if (!selectedMonth) return;
         
@@ -994,7 +975,7 @@
     }
     
     function renderFuelSummary() {
-      const selectedMonth = document.getElementById('report-fuel-month-input').value; // YYYY-MM
+      const selectedMonth = document.getElementById('report-month-input').value; // YYYY-MM
       if (!selectedMonth) return;
 
       const list = fuelRecords.filter(r => r.date && r.date.substring(0, 7) === selectedMonth);
@@ -1006,7 +987,6 @@
       const effVals = list.map(r => Number(r.efficiency_km_per_liter || 0)).filter(v => v > 0);
       const avgEff = effVals.length ? effVals.reduce((s, v) => s + v, 0) / effVals.length : 0;
 
-      document.getElementById('fs-total-cost').textContent = formatCurrency(totalCost);
       document.getElementById('fs-count').textContent = count + ' ครั้ง';
       document.getElementById('fs-liters').textContent = totalLiters.toFixed(2) + ' ล.';
       document.getElementById('fs-avg-price').textContent = formatCurrency(avgPrice);
