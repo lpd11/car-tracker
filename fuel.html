@@ -227,11 +227,8 @@
      */
     async function updateOdometerHint() {
       try {
-        const records = await getFuelRecords(activeCar.id);
-        if (records && records.length > 0) {
-          // Sort by odometer descending
-          records.sort((a, b) => b.odometer_km - a.odometer_km);
-          const lastOdo = records[0].odometer_km;
+        const lastOdo = await getLatestOdometer(activeCar.id);
+        if (lastOdo !== null) {
           document.getElementById('odometer-hint').textContent = `เลขไมล์ล่าสุดที่บันทึก: ${lastOdo.toLocaleString()} กม.`;
         } else {
           document.getElementById('odometer-hint').textContent = `กรอกตัวเลขสะสมบนหน้าปัด`;

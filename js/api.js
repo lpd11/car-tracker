@@ -145,6 +145,22 @@ async function getMaintenanceRecords(carId) {
   return await apiRequest({ action: 'getMaintenance', carId: carId });
 }
 
+/**
+ * เลขไมล์ล่าสุดจริงของรถคันนี้ — เทียบทั้งฝั่งเติมน้ำมันและซ่อมบำรุงแล้วเอาค่าที่สูงกว่า
+ * (ไมล์รถวิ่งขึ้นเรื่อยๆ เลขสูงกว่า = บันทึกล่าสุดกว่าจริง ไม่ว่าจะมาจากรายการประเภทไหน)
+ * ใช้ history cache ก่อนถ้ามี (ไม่ต้องรอ network) ไม่มีค่อยดึงสดจากทั้งสอง endpoint
+ */
+async function getLatestOdometer(carId) {
+  const cached = getHistoryCache(carId);
+  const [fuel, maint] = (cached && cached.fuel && cached.maintenance)
+    ? [cached.fuel, cached.maintenance]
+    : await Promise.all([getFuelRecords(carId), getMaintenanceRecords(carId)]);
+
+  const all = [...(fuel || []), ...(maint || [])];
+  if (all.length === 0) return null;
+  return Math.max(...all.map(r => Number(r.odometer_km) || 0));
+}
+
 async function getMaintenanceItems(recordId) {
   return await apiRequest({ action: 'getMaintenanceItems', recordId: recordId });
 }
