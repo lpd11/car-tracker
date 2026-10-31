@@ -17,8 +17,8 @@ const CAR_META = {
     name: 'Nissan Almera 2020',
     plate: '9กข 70',
     hexColor: '#EA580C',
-    iconUrl: CAR_APP_BASE_URL + '/Files/icon-almera.png',
-    heroUrl: CAR_APP_BASE_URL + '/Files/hero-almera.png',
+    iconUrl: CAR_APP_BASE_URL + '/Files/icon-almera.png?v=2',
+    heroUrl: CAR_APP_BASE_URL + '/Files/hero-almera.png?v=2',
     oilIntervalKm: 7000,
     airFilterIntervalKm: 35000,
     tireRotateIntervalKm: 14000
@@ -28,8 +28,8 @@ const CAR_META = {
     name: 'Honda Jazz 2014',
     plate: '3กส 7666',
     hexColor: '#FACC15',
-    iconUrl: CAR_APP_BASE_URL + '/Files/icon-jazz.png',
-    heroUrl: CAR_APP_BASE_URL + '/Files/hero-jazz.png',
+    iconUrl: CAR_APP_BASE_URL + '/Files/icon-jazz.png?v=2',
+    heroUrl: CAR_APP_BASE_URL + '/Files/hero-jazz.png?v=2',
     oilIntervalKm: 10000,
     airFilterIntervalKm: 30000,
     tireRotateIntervalKm: 10000
