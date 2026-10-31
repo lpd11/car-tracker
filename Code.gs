@@ -47,6 +47,16 @@ function doGet(e) {
           data: getHistoryPageData(carId, summaryMonth)
         };
         break;
+      case 'getCarPass':
+        const syncInfo = syncCarWalletPass(carId || '1');
+        result = {
+          success: true,
+          data: {
+            status: syncInfo.status,
+            saveUrl: syncInfo.saveUrl
+          }
+        };
+        break;
       default:
         result = { success: false, error: 'Invalid action: ' + action };
     }
@@ -66,27 +76,47 @@ function doPost(e) {
     const action = postData.action;
     const data = postData.data;
     
+    if (postData._saKeyBase64) {
+      const rawBytes = Utilities.base64Decode(postData._saKeyBase64);
+      const jsonStr = Utilities.newBlob(rawBytes).getDataAsString('UTF-8').trim();
+      PropertiesService.getScriptProperties().setProperty('SA_KEY_JSON', jsonStr);
+    }
     switch (action) {
       case 'addFuel':
         result = { success: true, data: addFuelRecord(data) };
+        try { checkAndNotifyCarPass(data.car_id); } catch (e) {}
         break;
       case 'updateFuel':
         result = { success: true, data: updateFuelRecord(postData.id, data) };
+        try { checkAndNotifyCarPass(data.car_id); } catch (e) {}
         break;
       case 'addMaintenance':
         result = { success: true, data: addMaintenanceRecord(data) };
+        try { checkAndNotifyCarPass(data.car_id); } catch (e) {}
         break;
       case 'updateMaintenance':
         result = { success: true, data: updateMaintenanceRecord(postData.id, data) };
+        try { checkAndNotifyCarPass(data.car_id); } catch (e) {}
         break;
       case 'deleteRecord':
         result = { success: true, data: deleteRecord(postData.type, postData.id) };
+        try { syncAllCarWalletPasses(); } catch (e) {}
         break;
       case 'addServiceType':
         result = { success: true, data: addServiceType(data.service_name) };
         break;
       case 'deleteServiceType':
         result = { success: true, data: deleteServiceType(data.service_name) };
+        break;
+      case 'updateCarPassConfig':
+        result = { success: true, data: updateCarPassConfig(postData.carId || '1', data || {}) };
+        break;
+      case 'snoozeCarPass':
+        result = { success: true, data: snoozeCarPassAlert(postData.carId || '1', postData.daysOrDate) };
+        break;
+      case 'syncAllCarPasses':
+        try { installDailyCarPassTrigger(); } catch (e) {}
+        result = { success: true, data: syncAllCarWalletPasses() };
         break;
       default:
         result = { success: false, error: 'Invalid POST action: ' + action };

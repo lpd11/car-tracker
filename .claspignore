@@ -3,4 +3,5 @@
 
 # Allow only Google Apps Script source files and manifest
 !Code.gs
+!WalletPass.gs
 !appsscript.json

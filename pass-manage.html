@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>จัดการบัตรรถยนต์ Google Wallet — Car Tracker</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #ea580c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: #1e293b; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 20;
+    }
+    .topbar h1 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .home-btn {
+      color: var(--text); text-decoration: none; background: #334155;
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .container { max-width: 520px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .car-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .car-tab {
+      padding: 12px 10px; border-radius: 14px; border: 2px solid var(--border);
+      background: var(--card); color: var(--text); font-weight: 700; font-size: 14px;
+      cursor: pointer; text-align: center; transition: 0.2s;
+    }
+    .car-tab.active-almera { background: #ea580c; border-color: #fb923c; color: #fff; }
+    .car-tab.active-jazz { background: #facc15; border-color: #fde047; color: #111827; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 16px;
+    }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .card-sub { font-size: 12px; color: var(--muted); margin-bottom: 12px; line-height: 1.4; }
+    .wallet-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 13px 16px; border-radius: 12px;
+      background: #111827; border: 1px solid #475569; color: #fff;
+      font-weight: 700; font-size: 14px; text-decoration: none; cursor: pointer;
+    }
+    .snooze-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+    .snooze-btn {
+      padding: 12px; border-radius: 12px; border: 1px solid var(--border);
+      background: #0f172a; color: var(--text); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: 0.15s;
+    }
+    .snooze-btn:active { transform: scale(0.98); }
+    .snooze-btn.primary { background: #2563eb; border-color: #3b82f6; color: #fff; }
+    .custom-row { display: flex; gap: 8px; margin-top: 6px; }
+    input[type="text"], input[type="number"] {
+      width: 100%; padding: 11px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: #0f172a; color: var(--text);
+      font-size: 14px;
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    .save-btn {
+      width: 100%; padding: 13px; border-radius: 12px; border: none;
+      background: #16a34a; color: #fff; font-size: 15px; font-weight: 700;
+      cursor: pointer; margin-top: 4px;
+    }
+    .status-pill {
+      display: inline-block; padding: 6px 10px; border-radius: 8px;
+      background: #334155; font-size: 12px; margin-bottom: 10px;
+    }
+    .parts-list { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+    .part-item {
+      padding: 10px 12px; border-radius: 10px; background: #0f172a;
+      border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+    }
+    .part-name { font-weight: 600; }
+    .part-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .part-rem { font-weight: 700; text-align: right; font-size: 13px; }
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: #10b981; color: #fff; padding: 10px 18px; border-radius: 999px;
+      font-size: 13px; font-weight: 700; display: none; z-index: 100;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1><i class="fa-solid fa-wallet"></i> บัตรรถยนต์ Google Wallet</h1>
+    <a href="home.html?menu=1" class="home-btn" title="หน้าหลัก"><i class="fa-solid fa-house"></i></a>
+  </div>
+
+  <div class="container">
+    <!-- สลับรถ -->
+    <div class="car-tabs">
+      <button id="tab1" class="car-tab active-almera" onclick="switchCar('1')">
+        🚗 Almera · 9กข 70
+      </button>
+      <button id="tab2" class="car-tab" onclick="switchCar('2')">
+        🚕 Jazz · 3กส 7666
+      </button>
+    </div>
+
+    <!-- ปุ่มเพิ่มบัตรเข้า Google Wallet -->
+    <div class="card">
+      <div class="card-title"><i class="fa-brands fa-google-pay"></i> บัตรใน Google Wallet</div>
+      <div id="odoSummary" class="card-sub">กำลังโหลดข้อมูลล่าสุดจาก Google Sheet...</div>
+      <a id="walletSaveLink" href="#" target="_blank" class="wallet-btn">
+        <i class="fa-solid fa-id-card"></i> กดเพื่อเพิ่ม/อัปเดตบัตรเข้า Google Wallet
+      </a>
+    </div>
+
+    <!-- เลื่อนการแจ้งเตือน (Snooze) -->
+    <div class="card">
+      <div class="card-title">⏰ เลื่อนการแจ้งเตือน (Snooze)</div>
+      <div id="snoozeStatus" class="status-pill">สถานะ: แจ้งเตือนตามปกติ</div>
+      <div class="card-sub">หากยังไม่ว่างนำรถเข้าศูนย์หรือต่อภาษี กดเลื่อนวันแจ้งเตือนออกไปก่อนได้ครับ</div>
+      <div class="snooze-grid">
+        <button class="snooze-btn primary" onclick="doSnooze(3)">เลื่อนไปอีก 3 วัน</button>
+        <button class="snooze-btn primary" onclick="doSnooze(7)">เลื่อนไปอีก 7 วัน</button>
+        <button class="snooze-btn primary" onclick="doSnooze(10)">เลื่อนไปอีก 10 วัน</button>
+        <button class="snooze-btn" onclick="doSnooze('clear')">🔔 เปิดเตือนตามปกติ</button>
+      </div>
+      <div class="custom-row">
+        <input type="number" id="customSnoozeDays" placeholder="ระบุจำนวนวัน เช่น 14" min="1" max="365" />
+        <button class="snooze-btn" style="white-space:nowrap;" onclick="doCustomSnooze()">ตั้งเลื่อนเตือน</button>
+      </div>
+    </div>
+
+    <!-- ตั้งค่าวันหมดอายุ ภาษี/พ.ร.บ. และ ประกันภัย -->
+    <div class="card">
+      <div class="card-title">🛡️ วันหมดอายุ ภาษี · พ.ร.บ. · ประกันภัย</div>
+      <div class="card-sub">กรอกวันที่ในรูปแบบ <b>DD-MM-YYYY (พ.ศ.)</b> เช่น <code>20-01-2570</code></div>
+      <div class="form-group">
+        <label>วันหมดอายุ ภาษี & พ.ร.บ. (DD-MM-YYYY พ.ศ.)</label>
+        <input type="text" id="taxExpireInput" placeholder="เช่น 20-01-2570" />
+      </div>
+      <div class="form-group">
+        <label>วันหมดอายุ ประกันภัยรถยนต์ (DD-MM-YYYY พ.ศ.)</label>
+        <input type="text" id="insExpireInput" placeholder="เช่น 12-12-2569" />
+      </div>
+      <div class="form-group">
+        <label>ชื่อบริษัทประกันภัย</label>
+        <input type="text" id="insCompanyInput" placeholder="เช่น วิริยะประกันภัย / ทิพยประกันภัย" />
+      </div>
+      <div class="form-group">
+        <label>เลขกรมธรรม์</label>
+        <input type="text" id="insPolicyInput" placeholder="เช่น 12345-67890" />
+      </div>
+      <div class="form-group">
+        <label>เบอร์โทรฉุกเฉินประกันภัย (ใช้กดโทรจากหลังบัตร)</label>
+        <input type="text" id="insPhoneInput" placeholder="เช่น 1557" />
+      </div>
+      <button class="save-btn" onclick="saveConfig()">
+        <i class="fa-solid fa-floppy-disk"></i> บันทึกและอัปเดตบัตร Google Wallet
+      </button>
+    </div>
+
+    <!-- ตารางสถานะอะไหล่ตามระยะ (Snap -15% / +20%) -->
+    <div class="card">
+      <div class="card-title">🔧 สถานะอะไหล่ตามระยะ (Snap -15% / +20%)</div>
+      <div class="card-sub">คำนวณอัตโนมัติจากประวัติซ่อมบำรุงจริงในแอป Car Tracker</div>
+      <div id="partsContainer" class="parts-list">
+        <div style="color:var(--muted); font-size:13px;">กำลังคำนวณ...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">บันทึกสำเร็จ!</div>
+
+  <script src="js/api.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    let activeCarId = urlParams.get('car') === '2' ? '2' : '1';
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    function toThaiInputDate(isoStr) {
+      if (!isoStr) return '';
+      const m = String(isoStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!m) return isoStr;
+      const y = Number(m[1]) + 543;
+      return `${m[3]}-${m[2]}-${y}`;
+    }
+
+    function switchCar(carId) {
+      activeCarId = String(carId);
+      document.getElementById('tab1').className = activeCarId === '1' ? 'car-tab active-almera' : 'car-tab';
+      document.getElementById('tab2').className = activeCarId === '2' ? 'car-tab active-jazz' : 'car-tab';
+      loadPassData();
+    }
+
+    async function loadPassData() {
+      document.getElementById('odoSummary').textContent = 'กำลังโหลดข้อมูลจาก Google Sheet...';
+      try {
+        const res = await fetch(`${API_URL}?action=getCarPass&carId=${activeCarId}`);
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'โหลดข้อมูลไม่สำเร็จ');
+        renderPassData(json.data.status, json.data.saveUrl);
+      } catch (err) {
+        document.getElementById('odoSummary').textContent = 'เกิดข้อผิดพลาด: ' + err.message;
+      }
+    }
+
+    function renderPassData(st, saveUrl) {
+      document.getElementById('odoSummary').innerHTML =
+        `<b>${st.meta.name} (${st.meta.plate})</b> · ไมล์ล่าสุด: <b>${st.currentOdoText}</b> · เช็กระยะถัดไป: <b>${st.nextMaintFrontText}</b>`;
+      document.getElementById('walletSaveLink').href = saveUrl || '#';
+
+      const cfg = st.config || {};
+      document.getElementById('taxExpireInput').value = toThaiInputDate(cfg.tax_expire_date);
+      document.getElementById('insExpireInput').value = toThaiInputDate(cfg.ins_expire_date);
+      document.getElementById('insCompanyInput').value = cfg.ins_company || '';
+      document.getElementById('insPolicyInput').value = cfg.ins_policy_no || '';
+      document.getElementById('insPhoneInput').value = cfg.ins_phone || '';
+
+      const snoozeEl = document.getElementById('snoozeStatus');
+      if (cfg.snooze_until) {
+        snoozeEl.textContent = `⏰ เลื่อนเตือนไว้ถึงวันที่: ${toThaiInputDate(cfg.snooze_until)}`;
+        snoozeEl.style.background = '#d97706';
+        snoozeEl.style.color = '#fff';
+      } else {
+        snoozeEl.textContent = '🔔 สถานะ: แจ้งเตือนตามปกติ';
+        snoozeEl.style.background = '#334155';
+        snoozeEl.style.color = '#f8fafc';
+      }
+
+      const partsEl = document.getElementById('partsContainer');
+      const itemsHtml = (st.trackedParts || []).map(p => {
+        const color = p.remainingKm <= 500 ? '#ef4444' : (p.remainingKm <= 2000 ? '#f59e0b' : '#10b981');
+        const hist = p.hasHistory
+          ? `ทำล่าสุด ${p.lastKm.toLocaleString()} กม. (${p.lastDateThai})`
+          : 'ยังไม่มีประวัติในระบบ';
+        return `
+          <div class="part-item">
+            <div>
+              <div class="part-name">${p.name}</div>
+              <div class="part-meta">${hist} → เป้าถัดไป ${p.nextDueKm.toLocaleString()} กม.</div>
+            </div>
+            <div class="part-rem" style="color:${color}">
+              ${p.remainingKm <= 0 ? 'ครบกำหนด!' : 'อีก ' + p.remainingKm.toLocaleString() + ' กม.'}
+            </div>
+          </div>
+        `;
+      }).join('');
+      partsEl.innerHTML = itemsHtml || '<div style="color:var(--muted)">ยังไม่มีข้อมูล</div>';
+    }
+
+    async function doSnooze(daysOrClear) {
+      showToast('กำลังบันทึกการเลื่อนเตือน...');
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'snoozeCarPass',
+          carId: activeCarId,
+          daysOrDate: daysOrClear
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast(daysOrClear === 'clear' ? 'เปิดการเตือนตามปกติแล้ว!' : `เลื่อนการแจ้งเตือนไปอีก ${daysOrClear} วันแล้ว!`);
+        loadPassData();
+      }
+    }
+
+    function doCustomSnooze() {
+      const days = document.getElementById('customSnoozeDays').value;
+      if (!days || Number(days) <= 0) return;
+      doSnooze(Number(days));
+    }
+
+    async function saveConfig() {
+      showToast('กำลังบันทึกและซิงก์บัตร Google Wallet...');
+      const data = {
+        tax_expire_date: document.getElementById('taxExpireInput').value.trim(),
+        ins_expire_date: document.getElementById('insExpireInput').value.trim(),
+        ins_company: document.getElementById('insCompanyInput').value.trim(),
+        ins_policy_no: document.getElementById('insPolicyInput').value.trim(),
+        ins_phone: document.getElementById('insPhoneInput').value.trim()
+      };
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'updateCarPassConfig',
+          carId: activeCarId,
+          data: data
+        })
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast('บันทึกและอัปเดตบัตร Google Wallet สำเร็จ!');
+        loadPassData();
+      }
+    }
+
+    switchCar(activeCarId);
+  </script>
+</body>
+</html>
