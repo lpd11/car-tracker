@@ -259,6 +259,7 @@ function computeCarPassStatus(carId) {
     {
       id: 'oil',
       name: 'น้ำมันเครื่อง + กรอง',
+      shortName: 'น้ำมันเครื่อง',
       keywords: ['น้ำมันเครื่อง', 'ถ่ายน้ำมันเครื่อง'],
       intervalKm: meta.oilIntervalKm,
       isPrimary: true
@@ -266,6 +267,7 @@ function computeCarPassStatus(carId) {
     {
       id: 'cvt',
       name: 'น้ำมันเกียร์ CVT',
+      shortName: 'น้ำมันเกียร์',
       keywords: ['น้ำมันเกียร์'],
       intervalKm: 40000,
       isPrimary: true
@@ -273,6 +275,7 @@ function computeCarPassStatus(carId) {
     {
       id: 'brake_fluid',
       name: 'น้ำมันเบรก',
+      shortName: 'น้ำมันเบรก',
       keywords: ['น้ำมันเบรค', 'น้ำมันเบรก'],
       intervalKm: 40000,
       isPrimary: true
@@ -280,6 +283,7 @@ function computeCarPassStatus(carId) {
     {
       id: 'air_filter',
       name: 'กรองอากาศเครื่องยนต์',
+      shortName: 'กรองอากาศ',
       keywords: ['กรองอากาศ'],
       intervalKm: meta.airFilterIntervalKm,
       isPrimary: false
@@ -287,6 +291,7 @@ function computeCarPassStatus(carId) {
     {
       id: 'ac_filter',
       name: 'ไส้กรองแอร์',
+      shortName: 'กรองแอร์',
       keywords: ['กรองแอร์'],
       intervalKm: 20000,
       isPrimary: false
@@ -294,6 +299,7 @@ function computeCarPassStatus(carId) {
     {
       id: 'tire_rotate',
       name: 'สลับยาง / ถ่วงล้อ',
+      shortName: 'สลับยาง',
       keywords: ['สลับยาง'],
       intervalKm: meta.tireRotateIntervalKm,
       isPrimary: false
@@ -301,6 +307,7 @@ function computeCarPassStatus(carId) {
     {
       id: 'spark_plug',
       name: 'หัวเทียน Iridium',
+      shortName: 'หัวเทียน',
       keywords: ['หัวเทียน'],
       intervalKm: 100000,
       isPrimary: true
@@ -326,6 +333,7 @@ function computeCarPassStatus(carId) {
       trackedParts.push({
         id: rule.id,
         name: rule.name,
+        shortName: rule.shortName,
         hasHistory: true,
         lastKm: lastKm,
         lastDate: lastDate,
@@ -342,6 +350,7 @@ function computeCarPassStatus(carId) {
       trackedParts.push({
         id: rule.id,
         name: rule.name,
+        shortName: rule.shortName,
         hasHistory: false,
         lastKm: 0,
         lastDate: '',
@@ -387,9 +396,11 @@ function computeCarPassStatus(carId) {
   // 1) ถ้าบันทึกซ่อมล่าสุดมีการระบุ next_km ไว้โดยตรง และยังไม่ผ่านไมล์นั้น ให้ใช้ค่านั้นก่อน
   let primaryNextKm = 0;
   let primaryLabel = 'น้ำมันเครื่อง';
+  let primaryShortLabel = 'น้ำมันเครื่อง';
   if (latestMaint && Number(latestMaint.next_km) > currentOdo) {
     primaryNextKm = Number(latestMaint.next_km);
     primaryLabel = 'ตามนัด';
+    primaryShortLabel = 'ตามนัด';
   } else {
     // 2) ใช้รายการที่ใกล้ถึงกำหนดที่สุดจาก trackedParts
     const candidates = trackedParts.filter(p => p.isPrimary || p.remainingKm <= 2000);
@@ -397,9 +408,11 @@ function computeCarPassStatus(carId) {
       candidates.sort((a, b) => a.remainingKm - b.remainingKm);
       primaryNextKm = candidates[0].nextDueKm;
       primaryLabel = candidates[0].name;
+      primaryShortLabel = candidates[0].shortName || candidates[0].name;
     } else if (trackedParts.length > 0) {
       primaryNextKm = trackedParts[0].nextDueKm;
       primaryLabel = trackedParts[0].name;
+      primaryShortLabel = trackedParts[0].shortName || trackedParts[0].name;
     }
   }
 
@@ -436,10 +449,11 @@ function computeCarPassStatus(carId) {
     primaryNextKm: primaryNextKm,
     primaryRemainingKm: primaryRemainingKm,
     primaryLabel: primaryLabel,
+    primaryShortLabel: primaryShortLabel,
     nextMaintFrontText: primaryNextKm > 0
       ? (primaryRemainingKm <= 0
-          ? `ครบกำหนด! (${formatNumberCommas(primaryNextKm)})`
-          : `อีก ${formatNumberCommas(primaryRemainingKm)} กม.`)
+          ? `${primaryShortLabel}: ครบ! (${formatNumberCommas(primaryNextKm)})`
+          : `${primaryShortLabel}: อีก ${formatNumberCommas(primaryRemainingKm)} กม.`)
       : '-',
     taxDisplay: taxDisplay,
     taxRemainingDays: taxRemainingDays,
