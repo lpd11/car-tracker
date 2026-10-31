@@ -18,6 +18,7 @@ const CAR_META = {
     plate: '9กข 70',
     hexColor: '#EA580C',
     iconUrl: CAR_APP_BASE_URL + '/Files/icon-almera.png',
+    heroUrl: CAR_APP_BASE_URL + '/Files/hero-almera.png',
     oilIntervalKm: 7000,
     airFilterIntervalKm: 35000,
     tireRotateIntervalKm: 14000
@@ -28,6 +29,7 @@ const CAR_META = {
     plate: '3กส 7666',
     hexColor: '#FACC15',
     iconUrl: CAR_APP_BASE_URL + '/Files/icon-jazz.png',
+    heroUrl: CAR_APP_BASE_URL + '/Files/hero-jazz.png',
     oilIntervalKm: 10000,
     airFilterIntervalKm: 30000,
     tireRotateIntervalKm: 10000
@@ -708,6 +710,17 @@ function buildCarGenericObject(carId) {
       defaultValue: {
         language: 'th',
         value: `ทะเบียน ${status.meta.plate}`
+      }
+    },
+    heroImage: {
+      sourceUri: {
+        uri: status.meta.heroUrl
+      },
+      contentDescription: {
+        defaultValue: {
+          language: 'th',
+          value: `${status.meta.name} (${status.meta.plate})`
+        }
       }
     },
     textModulesData: [
