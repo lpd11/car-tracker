@@ -38,6 +38,35 @@ const SNAP_EARLY_RATIO = 0.15; // ก่อนกำหนดไม่เกิ�
 const SNAP_LATE_RATIO = 0.20;  // ช้ากว่ากำหนดไม่เกิน 20%
 
 /**
+ * เมนูบน Google Sheet สำหรับกดอนุญาตสิทธิ์และซิงก์บัตรรถยนต์
+ */
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('🚗 บัตรรถยนต์ Wallet')
+      .addItem('1. ซิงก์บัตรทั้ง 2 คัน + ติดตั้ง Trigger รายวัน (01:00)', 'authorizeAndSyncAllCarPasses')
+      .addToUi();
+  } catch (e) {}
+}
+
+/**
+ * เรียกจากเมนูใน Sheet หรือปุ่ม Run ใน Apps Script Editor เพื่ออนุญาตสิทธิ์ UrlFetchApp + ScriptApp ครั้งเดียว
+ */
+function authorizeAndSyncAllCarPasses() {
+  installDailyCarPassTrigger();
+  const res = syncAllCarWalletPasses();
+  Logger.log('Almera Save URL: ' + res.car1.saveUrl);
+  Logger.log('Jazz Save URL: ' + res.car2.saveUrl);
+  try {
+    SpreadsheetApp.getUi().alert(
+      'ซิงก์บัตรรถยนต์ทั้ง 2 คัน และตั้ง Trigger รายวันสำเร็จ!\n' +
+      'เปิดหน้า https://lpd11.github.io/car-tracker/pass-manage.html เพื่อกดเพิ่มบัตรเข้า Google Wallet ได้เลยครับ'
+    );
+  } catch (e) {}
+  return res;
+}
+
+/**
  * เปิดหรือสร้างแท็บ car_pass_config สำหรับเก็บวันหมดอายุภาษี/ประกัน และสถานะเลื่อนเตือน (Snooze)
  */
 function getCarPassConfigSheet() {

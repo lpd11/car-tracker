@@ -76,11 +76,6 @@ function doPost(e) {
     const action = postData.action;
     const data = postData.data;
     
-    if (postData._saKeyBase64) {
-      const rawBytes = Utilities.base64Decode(postData._saKeyBase64);
-      const jsonStr = Utilities.newBlob(rawBytes).getDataAsString('UTF-8').trim();
-      PropertiesService.getScriptProperties().setProperty('SA_KEY_JSON', jsonStr);
-    }
     switch (action) {
       case 'addFuel':
         result = { success: true, data: addFuelRecord(data) };
